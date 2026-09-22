@@ -43,7 +43,7 @@ Os arquivos exportados seguem este padrão:
 
 Onde:
 
-- perfil_ é fixo
+- perfil\_ é fixo
 - nome e sobrenome são editáveis no card da foto
 
 ## Ajustes rápidos de enquadramento
@@ -87,4 +87,3 @@ No arquivo index.html, os principais controles ficam em constantes:
 ## Privacidade
 
 As imagens são processadas localmente no navegador do usuário.
-
