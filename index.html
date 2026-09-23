@@ -285,75 +285,111 @@
 
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 1280px) {
+      .gallery {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     .card {
-      border: 1px solid #dfe6f3;
-      border-radius: 18px;
-      overflow: hidden;
+      border: 1px solid #d7dde8;
+      border-radius: 12px;
       background: var(--card);
+      padding: 14px;
       display: grid;
-      grid-template-rows: auto 1fr;
-      box-shadow: 0 10px 28px rgba(39, 65, 110, 0.08);
-      transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease, transform var(--transition-fast) ease;
+      gap: 12px;
+      box-shadow: 0 8px 20px rgba(23, 32, 51, 0.06);
+      transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
     }
 
     .card:hover {
-      border-color: #d2ddee;
-      box-shadow: 0 6px 20px rgba(17, 24, 39, 0.06);
-      transform: translateY(-1px);
-    }
-
-    .card .thumb,
-    .card .result {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 1;
-      object-fit: contain;
-      background: repeating-conic-gradient(#eef2f8 0% 25%, #f9fbff 0% 50%) 0 / 16px 16px;
-      border-radius: 14px;
+      border-color: #c8d1e1;
+      box-shadow: 0 10px 24px rgba(23, 32, 51, 0.1);
     }
 
     .previews {
+      position: relative;
+      border: 1px solid #cfd7e5;
+      border-radius: 8px;
+      padding: 8px;
+      background: #f6f8fc;
+    }
+
+    .card .result {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 10;
+      object-fit: contain;
+      background: #e3e8f2;
+      border-radius: 4px;
+    }
+
+    .round-guide-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: calc(min(calc((100% - 16px) * var(--fit-w, 1)), calc((100% - 16px) * var(--fit-h, 1))) - 8px);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      border: 2px solid rgba(130, 103, 255, 0.35);
+      pointer-events: none;
+      z-index: 1;
+      border-radius: 4px;
+    }
+
+    .round-guide-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: calc(min(calc((100% - 16px) * var(--fit-w, 1)), calc((100% - 16px) * var(--fit-h, 1))) - 8px);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid rgba(130, 103, 255, 0.5);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .status-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid #d2d9e8;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      padding: 10px;
-      max-width: 380px;
+      place-items: center;
+      box-shadow: 0 3px 8px rgba(23, 32, 51, 0.12);
+      color: #6f7f9c;
+      font-size: 0.95rem;
+      line-height: 1;
+      z-index: 2;
+    }
+
+    .status-badge.done {
+      color: #118a49;
+      border-color: #bfe7d0;
+      background: #f2fcf6;
     }
 
     .meta {
-      padding: 14px;
       display: grid;
       gap: 10px;
       align-content: start;
-      border-top: 1px solid var(--line);
     }
 
-    .card.compact-compare {
-      grid-template-rows: auto auto;
-    }
-
-    .card.compact-compare .previews {
-      justify-self: start;
-      width: min(100%, 380px);
-      padding-bottom: 8px;
-    }
-
-    .card.compact-compare .result {
-      max-height: 130px;
-      width: 100%;
-      object-fit: contain;
-    }
-
-    .file-name {
-      font-size: 0.88rem;
-      color: #39465e;
-      font-weight: 500;
-      line-height: 1.35;
-      overflow-wrap: anywhere;
+    .export-name-label {
+      font-size: 0.82rem;
+      color: #52617d;
+      font-weight: 600;
+      margin: 0;
+      line-height: 1.3;
     }
 
     .export-name {
@@ -361,35 +397,26 @@
       gap: 6px;
     }
 
-    .export-name-label {
-      font-size: 0.72rem;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: #7d889b;
-      font-weight: 700;
-    }
-
     .export-name-row {
       display: grid;
-      grid-template-columns: auto 1fr;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      gap: 6px;
-      border: 1px solid #d6deea;
-      border-radius: 8px;
-      padding: 6px 8px;
+      gap: 8px;
+      border: 1px solid #d5dbe8;
+      border-radius: 4px;
       background: #fff;
+      padding: 4px 8px;
     }
 
     .export-name-fields {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
+      display: contents;
     }
 
-    .export-name-prefix {
-      color: #465572;
-      font-size: 0.84rem;
-      font-weight: 600;
+    .name-divider {
+      color: #8593ad;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1;
     }
 
     .export-name-input {
@@ -398,39 +425,72 @@
       min-width: 0;
       width: 100%;
       font: inherit;
-      font-size: 0.84rem;
+      font-size: 0.95rem;
       color: #172033;
       background: transparent;
-    }
-
-    .export-name-input.wrap {
-      border: 1px solid #d6deea;
-      border-radius: 8px;
-      padding: 7px 8px;
-      background: #fff;
+      padding: 4px 0;
     }
 
     .photo-actions {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 8px;
-      padding-top: 10px;
-      border-top: 1px solid var(--line);
+      justify-content: stretch;
+      align-items: center;
+      gap: 10px;
+      padding-top: 2px;
+      width: 100%;
     }
 
-    .photo-actions button {
-      min-height: 34px;
-      padding: 0 10px;
-      font-size: 0.78rem;
-      color: #4b5b76;
-      border-color: #dbe2ee;
+    .photo-actions>button {
+      flex: 1 1 0;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid #d5dbe8;
       background: #fff;
+      color: #3b4a63;
+      font-size: 0.78rem;
+      font-weight: 600;
     }
 
-    .photo-actions button:hover:not(:disabled) {
-      background: #f7faff;
-      border-color: #c9d5ea;
+    .photo-actions>button:hover:not(:disabled) {
+      background: #f5f8ff;
+      border-color: #bccae3;
+    }
+
+    .action-button {
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid #d5dbe8;
+      background: #fff;
+      color: #3b4a63;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .action-button:hover:not(:disabled) {
+      background: #f5f8ff;
+      border-color: #bccae3;
+    }
+
+    .photo-actions>.remove-action {
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid #f2c8cf;
+      background: #fff1f3;
+      color: #d33545;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .photo-actions>.remove-action:hover:not(:disabled) {
+      border-color: #e8a7b2;
+      background: #ffe6ea;
+    }
+
+    .skill-summary {
+      display: none;
     }
 
     .privacy {
@@ -639,7 +699,7 @@
       }
 
       .gallery {
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+        grid-template-columns: 1fr;
       }
 
       .action-row {
@@ -857,8 +917,12 @@
     function exportBaseName(item) {
       const firstName = sanitizeEditableName(item.firstName || "");
       const lastName = sanitizeEditableName(item.lastName || "");
-      const middle = [firstName, lastName].filter(Boolean).join("_");
-      return `perfil_${middle || "sem_nome"}`;
+      return `${firstName || "nome"}_${lastName || "sobrenome"}`;
+    }
+
+    function preferredOutput(item) {
+      if (!item.outputs?.length) return null;
+      return item.outputs.find((output) => output.shape === "quadrada") || item.outputs[0];
     }
 
     function exportableItems() {
@@ -1054,7 +1118,9 @@
       const sizes = [0];
       for (let offset = 3; offset < data.length; offset += 4) {
         const confidence = Math.max(0, Math.min(1, (data[offset] / 255 - 0.12) / 0.76));
-        data[offset] = Math.round(255 * confidence * confidence * (3 - 2 * confidence));
+        const alpha = Math.round(255 * confidence * confidence * (3 - 2 * confidence));
+        // Clamp very low/high alpha to reduce white matte residue around the subject.
+        data[offset] = alpha < 26 ? 0 : alpha > 245 ? 255 : alpha;
       }
       for (let pixel = 0; pixel < labels.length; pixel++) {
         if (labels[pixel] || !data[pixel * 4 + 3]) continue;
@@ -1130,6 +1196,114 @@
 
     function clampByte(value) {
       return value < 0 ? 0 : value > 255 ? 255 : value;
+    }
+
+    function cleanFringe(canvas) {
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const { width, height } = imageData;
+      const pixels = imageData.data;
+      const alphaMap = new Uint8Array(width * height);
+      for (let i = 0, p = 0; i < pixels.length; i += 4, p++) alphaMap[p] = pixels[i + 3];
+
+      const hasTransparentNeighbor = (x, y) => {
+        for (let ny = Math.max(0, y - 1); ny <= Math.min(height - 1, y + 1); ny++) {
+          for (let nx = Math.max(0, x - 1); nx <= Math.min(width - 1, x + 1); nx++) {
+            if (nx === x && ny === y) continue;
+            if (alphaMap[ny * width + nx] === 0) return true;
+          }
+        }
+        return false;
+      };
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        const p = i / 4;
+        const x = p % width;
+        const y = Math.floor(p / width);
+        const alpha = pixels[i + 3];
+        if (alpha === 0) {
+          pixels[i] = 0;
+          pixels[i + 1] = 0;
+          pixels[i + 2] = 0;
+          continue;
+        }
+
+        const edgePixel = hasTransparentNeighbor(x, y);
+        if (edgePixel && alpha < 140) {
+          pixels[i] = 0;
+          pixels[i + 1] = 0;
+          pixels[i + 2] = 0;
+          pixels[i + 3] = 0;
+          continue;
+        }
+
+        // Decontaminate edge color to suppress white halo from background spill.
+        if (alpha < 220 || edgePixel) {
+          const factor = alpha / 255;
+          pixels[i] = Math.round(pixels[i] * factor);
+          pixels[i + 1] = Math.round(pixels[i + 1] * factor);
+          pixels[i + 2] = Math.round(pixels[i + 2] * factor);
+        }
+
+        if (edgePixel && alpha < 220) {
+          pixels[i + 3] = 0;
+        } else if (alpha < 120) {
+          const bright = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+          if (bright > 150) {
+            pixels[i + 3] = Math.round(alpha * 0.6);
+          }
+        }
+      }
+      context.putImageData(imageData, 0, 0);
+    }
+
+    function alphaBounds(canvas) {
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const { width, height } = canvas;
+      const data = context.getImageData(0, 0, width, height).data;
+      let minX = width;
+      let minY = height;
+      let maxX = -1;
+      let maxY = -1;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const alpha = data[(y * width + x) * 4 + 3];
+          if (alpha < 8) continue;
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+      if (maxX < 0 || maxY < 0) return null;
+      return { minX, minY, maxX, maxY };
+    }
+
+    function trimRoundOuterRing(canvas, radius, feather = 1.2) {
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const hardRadius = Math.max(0, radius - feather);
+      const hardRadiusSq = hardRadius * hardRadius;
+
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const dx = x + 0.5 - cx;
+          const dy = y + 0.5 - cy;
+          const distSq = dx * dx + dy * dy;
+          if (distSq <= hardRadiusSq) continue;
+          const idx = (y * canvas.width + x) * 4;
+          // Remove any semi-transparent outer ring to avoid visible halo in compositing apps.
+          pixels[idx + 3] = 0;
+          pixels[idx] = 0;
+          pixels[idx + 1] = 0;
+          pixels[idx + 2] = 0;
+        }
+      }
+
+      context.putImageData(imageData, 0, 0);
     }
 
     // Topaz-like local enhancement pass for portraits: tonal normalize + subtle detail boost.
@@ -1278,12 +1452,11 @@
             if (!file.type.startsWith("image/")) throw new Error("Formato não reconhecido como imagem.");
             const loaded = await loadImageFromFile(file);
             const base = sanitizeEditableName(sanitizeName(file.name));
-            const profile = splitProfileName(base);
             state.items.push({
               id: crypto.randomUUID(), file: { name: file.name }, ...loaded,
               name: sanitizeName(file.name),
-              firstName: profile.firstName,
-              lastName: profile.lastName,
+              firstName: "",
+              lastName: "",
               status: "pending",
               eyes: null
             });
@@ -1309,8 +1482,7 @@
       els.kpiDone.textContent = String(done);
       els.kpiPending.textContent = String(pending);
       els.startBtn.disabled = pending === 0 || state.busy || state.importing;
-      const formats = selectedFormats();
-      const exportCount = exportableItems().reduce((total, item) => total + item.outputs.filter(output => formats.includes(output.shape)).length, 0);
+      const exportCount = exportableItems().reduce((total, item) => total + (preferredOutput(item) ? 1 : 0), 0);
       els.zipBtn.disabled = exportCount === 0 || state.busy || state.importing;
       els.fileInput.disabled = state.busy || state.importing;
       els.clearBtn.disabled = !total || state.busy || state.importing || state.activeIndex >= 0;
@@ -1337,48 +1509,54 @@
       state.items.forEach((item, index) => {
         const card = document.createElement("article");
         card.className = "card";
-        if (item.outputs?.length) card.classList.add("compact-compare");
 
         const visual = document.createElement("div");
         visual.className = "previews";
-        for (const preview of item.outputs || [{ url: item.thumbURL, shape: "Original" }]) {
-          const image = document.createElement("img");
-          image.className = "result";
-          image.src = preview.url;
-          image.alt = `${item.file.name} - ${preview.shape}`;
-          image.title = preview.shape;
-          visual.appendChild(image);
-        }
+        const preview = item.outputs?.[0] || { url: item.thumbURL, shape: "Original" };
+        const image = document.createElement("img");
+        image.className = "result";
+        image.src = preview.url;
+        image.alt = `${item.file.name} - ${preview.shape}`;
+        image.title = preview.shape;
+        visual.appendChild(image);
+
+        const containerAspect = 16 / 10;
+        let previewAspect = item.img.naturalWidth / item.img.naturalHeight;
+        if (preview.shape === "quadrada" || preview.shape === "redonda") previewAspect = 1;
+        const fitWidth = Math.min(1, previewAspect / containerAspect);
+        const fitHeight = Math.min(1, containerAspect / previewAspect);
+        visual.style.setProperty("--fit-w", String(fitWidth));
+        visual.style.setProperty("--fit-h", String(fitHeight));
+
+        const roundGuideBox = document.createElement("div");
+        roundGuideBox.className = "round-guide-box";
+        visual.appendChild(roundGuideBox);
+
+        const roundGuideCircle = document.createElement("div");
+        roundGuideCircle.className = "round-guide-circle";
+        visual.appendChild(roundGuideCircle);
+
+        const statusBadge = document.createElement("div");
+        statusBadge.className = "status-badge";
+        statusBadge.textContent = "✓";
+        statusBadge.title = statusLabel(item.status);
+        visual.appendChild(statusBadge);
 
         const meta = document.createElement("div");
         meta.className = "meta";
-
-        const s = document.createElement("div");
-        s.className = "status " + item.status;
-        s.textContent = statusLabel(item.status);
-
-        const name = document.createElement("div");
-        name.className = "file-name";
-        const displayFirst = sanitizeEditableName(item.firstName || "");
-        const displayLast = sanitizeEditableName(item.lastName || "");
-        const fullName = [displayFirst, displayLast].filter(Boolean).join(" ").replace(/_/g, " ").trim();
-        name.textContent = fullName || "nome e sobrenome";
 
         const exportName = document.createElement("div");
         exportName.className = "export-name";
         const exportLabel = document.createElement("div");
         exportLabel.className = "export-name-label";
-        exportLabel.textContent = "Nome de exportação";
+        exportLabel.textContent = "Nome do Arquivo";
         const exportRow = document.createElement("div");
         exportRow.className = "export-name-row";
-        const exportPrefix = document.createElement("span");
-        exportPrefix.className = "export-name-prefix";
-        exportPrefix.textContent = "perfil_";
         const fields = document.createElement("div");
         fields.className = "export-name-fields";
 
         const firstInput = document.createElement("input");
-        firstInput.className = "export-name-input wrap";
+        firstInput.className = "export-name-input";
         firstInput.type = "text";
         firstInput.placeholder = "Nome";
         firstInput.value = item.firstName || "";
@@ -1390,7 +1568,7 @@
         });
 
         const lastInput = document.createElement("input");
-        lastInput.className = "export-name-input wrap";
+        lastInput.className = "export-name-input";
         lastInput.type = "text";
         lastInput.placeholder = "Sobrenome";
         lastInput.value = item.lastName || "";
@@ -1401,8 +1579,12 @@
           lastInput.value = item.lastName;
         });
 
-        fields.append(firstInput, lastInput);
-        exportRow.append(exportPrefix, fields);
+        const divider = document.createElement("span");
+        divider.className = "name-divider";
+        divider.textContent = "_";
+
+        fields.append(firstInput, divider, lastInput);
+        exportRow.append(fields);
         exportName.append(exportLabel, exportRow);
         if (item.error) {
           const error = document.createElement("div");
@@ -1410,12 +1592,7 @@
           error.textContent = item.error;
           meta.appendChild(error);
         }
-        if (item.warning) {
-          const warning = document.createElement("div");
-          warning.className = "tiny";
-          warning.textContent = item.warning;
-          meta.appendChild(warning);
-        }
+
 
         const btn = document.createElement("button");
         btn.textContent = item.status === "done" ? "Revisar olhos" : "Marcar olhos";
@@ -1423,28 +1600,24 @@
         btn.addEventListener("click", () => openAlignModal(index));
 
         const remove = document.createElement("button");
+        remove.className = "remove-action";
         remove.textContent = "Remover foto";
         remove.disabled = state.busy || state.importing || state.activeIndex >= 0;
         remove.addEventListener("click", () => removeItem(item));
+
+        const downloadSingle = document.createElement("button");
+        downloadSingle.textContent = "Baixar foto";
+        downloadSingle.disabled = state.busy || state.importing || state.activeIndex >= 0 || item.status !== "done" || !item.outputs?.length;
+        downloadSingle.addEventListener("click", () => {
+          const output = preferredOutput(item);
+          if (!output) return;
+          const filename = `${String(index + 1).padStart(3, "0")}_${exportBaseName(item)}.png`;
+          downloadBlob(output.blob, filename);
+        });
         const actions = document.createElement("div");
         actions.className = "photo-actions";
-        actions.append(btn, remove);
-        if (item.status === "done") {
-          const review = document.createElement("select");
-          review.setAttribute("aria-label", `Revisão de ${item.file.name}`);
-          for (const [value, label] of [["pending", "Aguardando aprovação"], ["approved", "Aprovada"], ["rejected", "Rejeitada"]]) {
-            const option = document.createElement("option");
-            option.value = value;
-            option.textContent = label;
-            review.appendChild(option);
-          }
-          review.value = item.review || "pending";
-          review.disabled = state.busy || state.importing;
-          review.className = "review-select";
-          review.addEventListener("change", () => { item.review = review.value; updateKpis(); });
-          meta.appendChild(review);
-        }
-        meta.prepend(exportName, name, s);
+        actions.append(btn, downloadSingle, remove);
+        meta.prepend(exportName);
         meta.append(actions);
         card.append(visual, meta);
         els.gallery.appendChild(card);
@@ -1655,6 +1828,7 @@
       els.hint.textContent = "Removendo fundo... O primeiro carregamento pode demorar.";
       const foreground = await removeBackground(item.img);
       enhancePortraitCanvas(foreground);
+      cleanFringe(foreground);
       const outputs = [];
       let warning;
       try {
@@ -1705,10 +1879,11 @@
       const targetAngle = Math.atan2(targetR.y - targetL.y, targetR.x - targetL.x);
       const rotation = targetAngle - sourceAngle;
       const scale = settings.targetEyeDistance / sourceDist;
+      let extraYOffset = 0;
 
       const drawPortrait = () => {
         ctx.save();
-        ctx.translate(targetL.x, targetL.y);
+        ctx.translate(targetL.x, targetL.y + extraYOffset);
         ctx.rotate(rotation);
         ctx.scale(scale, scale);
         ctx.translate(-eyeL.x, -eyeL.y);
@@ -1716,17 +1891,46 @@
         ctx.restore();
       };
 
-      ctx.save();
-      ctx.beginPath();
-      if (settings.shape === "redonda") {
-        ctx.arc(c.width / 2, c.height / 2, settings.circleRadius, 0, Math.PI * 2);
-      } else {
-        ctx.rect(c.width / 2 - settings.circleRadius, c.height / 2 - settings.circleRadius,
-          settings.circleRadius * 2, settings.circleRadius * 2);
+      const applyShapeClip = () => {
+        ctx.beginPath();
+        if (settings.shape === "redonda") {
+          ctx.arc(c.width / 2, c.height / 2, settings.circleRadius, 0, Math.PI * 2);
+        } else {
+          // Square export should fill the full canvas to avoid inner transparent margins.
+          ctx.rect(0, 0, c.width, c.height);
+        }
+        ctx.clip();
+      };
+
+      const drawWithClip = () => {
+        ctx.save();
+        applyShapeClip();
+        drawPortrait();
+        ctx.restore();
+      };
+
+      drawWithClip();
+
+      cleanFringe(c);
+      const bounds = alphaBounds(c);
+      if (bounds) {
+        const targetBottom = settings.shape === "redonda"
+          ? c.height / 2 + settings.circleRadius - 1
+          : c.height - 1;
+        const gapBottom = targetBottom - bounds.maxY;
+        if (gapBottom > 1) {
+          const maxShift = settings.circleRadius * 0.22;
+          extraYOffset = Math.min(gapBottom, maxShift);
+          ctx.clearRect(0, 0, c.width, c.height);
+          drawWithClip();
+        }
       }
-      ctx.clip();
-      drawPortrait();
-      ctx.restore();
+
+      if (settings.shape === "redonda") {
+        trimRoundOuterRing(c, settings.circleRadius, 1.6);
+      }
+
+      cleanFringe(c);
 
       validateForeground(c);
       return encodePng(c);
@@ -1883,18 +2087,21 @@
     async function downloadZip() {
       if (state.busy || state.importing || state.activeIndex >= 0) return;
       const ready = exportableItems();
-      const formats = selectedFormats();
-      if (ready.length === 0 || !formats.length) return;
+      if (ready.length === 0) return;
       state.busy = true;
       render();
       els.notice.textContent = `Gerando ZIP: ${ready.length} fotos aprovadas; ${state.items.length - ready.length} fotos não incluídas.`;
       try {
 
-        const entries = ready.flatMap((item, index) => item.outputs.filter(output => formats.includes(output.shape)).map((output) => ({
-          name: `${String(index + 1).padStart(3, "0")}_${exportBaseName(item)}_${output.shape}.png`,
-          blob: output.blob,
-          date: new Date()
-        })));
+        const entries = ready.flatMap((item, index) => {
+          const output = preferredOutput(item);
+          if (!output) return [];
+          return [{
+            name: `${String(index + 1).padStart(3, "0")}_${exportBaseName(item)}.png`,
+            blob: output.blob,
+            date: new Date()
+          }];
+        });
 
         const zipBlob = await buildZip(entries);
         const url = URL.createObjectURL(zipBlob);
@@ -1911,6 +2118,17 @@
         state.busy = false;
         render();
       }
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     function bindEvents() {
