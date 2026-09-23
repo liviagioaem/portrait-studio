@@ -285,111 +285,132 @@
 
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 1280px) {
+      .gallery {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     .card {
-      border: 1px solid #dfe6f3;
-      border-radius: 18px;
-      overflow: hidden;
+      border: 1px solid #d7dde8;
+      border-radius: 12px;
       background: var(--card);
+      padding: 14px;
       display: grid;
-      grid-template-rows: auto 1fr;
-      box-shadow: 0 10px 28px rgba(39, 65, 110, 0.08);
-      transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease, transform var(--transition-fast) ease;
+      gap: 12px;
+      box-shadow: 0 8px 20px rgba(23, 32, 51, 0.06);
+      transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
     }
 
     .card:hover {
-      border-color: #d2ddee;
-      box-shadow: 0 6px 20px rgba(17, 24, 39, 0.06);
-      transform: translateY(-1px);
-    }
-
-    .card .thumb,
-    .card .result {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 1;
-      object-fit: contain;
-      background: repeating-conic-gradient(#eef2f8 0% 25%, #f9fbff 0% 50%) 0 / 16px 16px;
-      border-radius: 14px;
+      border-color: #c8d1e1;
+      box-shadow: 0 10px 24px rgba(23, 32, 51, 0.1);
     }
 
     .previews {
+      position: relative;
+      border: 1px solid #cfd7e5;
+      border-radius: 8px;
+      padding: 8px;
+      background: #f6f8fc;
+    }
+
+    .card .result {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 10;
+      object-fit: contain;
+      background: #e3e8f2;
+      border-radius: 4px;
+    }
+
+    .status {
+      margin: 0;
+    }
+
+    .status-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid #d2d9e8;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      padding: 10px;
-      max-width: 380px;
+      place-items: center;
+      box-shadow: 0 3px 8px rgba(23, 32, 51, 0.12);
+      color: #6f7f9c;
+      font-size: 0.95rem;
+      line-height: 1;
+      z-index: 2;
+    }
+
+    .status-badge.done {
+      color: #118a49;
+      border-color: #bfe7d0;
+      background: #f2fcf6;
+    }
+
+    .status-badge.working {
+      color: #9a5b0b;
+      border-color: #f1dbb8;
+      background: #fff9ef;
+    }
+
+    .status-badge.error {
+      color: #b4232f;
+      border-color: #f3cad0;
+      background: #fff6f7;
     }
 
     .meta {
-      padding: 14px;
       display: grid;
       gap: 10px;
       align-content: start;
-      border-top: 1px solid var(--line);
     }
 
-    .card.compact-compare {
-      grid-template-rows: auto auto;
-    }
-
-    .card.compact-compare .previews {
-      justify-self: start;
-      width: min(100%, 380px);
-      padding-bottom: 8px;
-    }
-
-    .card.compact-compare .result {
-      max-height: 130px;
-      width: 100%;
-      object-fit: contain;
-    }
-
-    .file-name {
-      font-size: 0.88rem;
-      color: #39465e;
-      font-weight: 500;
-      line-height: 1.35;
-      overflow-wrap: anywhere;
+    .export-file-label {
+      font-size: 0.82rem;
+      color: #52617d;
+      font-weight: 600;
+      margin: 0;
+      line-height: 1.3;
     }
 
     .export-name {
-      display: grid;
-      gap: 6px;
-    }
-
-    .export-name-label {
-      font-size: 0.72rem;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: #7d889b;
-      font-weight: 700;
-    }
-
-    .export-name-row {
-      display: grid;
-      grid-template-columns: auto 1fr;
+      border: 1px solid #d5dbe8;
+      border-radius: 4px;
+      background: #f7f9fc;
+      padding: 6px 10px;
+      min-height: 34px;
+      display: flex;
       align-items: center;
-      gap: 6px;
-      border: 1px solid #d6deea;
-      border-radius: 8px;
-      padding: 6px 8px;
-      background: #fff;
+      color: #3a475f;
+      font-size: 0.9rem;
+      overflow-wrap: anywhere;
     }
 
-    .export-name-fields {
+    .name-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #d5dbe8;
+      border-radius: 4px;
+      background: #fff;
+      padding: 4px 8px;
     }
 
-    .export-name-prefix {
-      color: #465572;
-      font-size: 0.84rem;
-      font-weight: 600;
+    .name-divider {
+      color: #8593ad;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1;
     }
 
     .export-name-input {
@@ -398,39 +419,63 @@
       min-width: 0;
       width: 100%;
       font: inherit;
-      font-size: 0.84rem;
+      font-size: 0.95rem;
       color: #172033;
       background: transparent;
+      padding: 4px 0;
     }
 
-    .export-name-input.wrap {
-      border: 1px solid #d6deea;
-      border-radius: 8px;
-      padding: 7px 8px;
-      background: #fff;
+    .file-name {
+      font-size: 0.78rem;
+      color: #73839d;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+      margin: -2px 0 0;
     }
 
     .photo-actions {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 8px;
-      padding-top: 10px;
-      border-top: 1px solid var(--line);
+      justify-content: stretch;
+      align-items: center;
+      gap: 10px;
+      padding-top: 2px;
+      width: 100%;
     }
 
-    .photo-actions button {
-      min-height: 34px;
-      padding: 0 10px;
-      font-size: 0.78rem;
-      color: #4b5b76;
-      border-color: #dbe2ee;
+    .photo-actions>button {
+      flex: 1 1 0;
+    }
+
+    .action-button {
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid #d5dbe8;
       background: #fff;
+      color: #3b4a63;
+      font-size: 0.78rem;
+      font-weight: 600;
     }
 
-    .photo-actions button:hover:not(:disabled) {
-      background: #f7faff;
-      border-color: #c9d5ea;
+    .action-button:hover:not(:disabled) {
+      background: #f5f8ff;
+      border-color: #bccae3;
+    }
+
+    .remove-action {
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid #f0c9cd;
+      background: #fff7f8;
+      color: #b4232f;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .remove-action:hover:not(:disabled) {
+      border-color: #e49ca4;
+      background: #ffeff1;
     }
 
     .privacy {
@@ -503,6 +548,16 @@
       font-size: 0.78rem;
       color: var(--text-soft);
       line-height: 1.35;
+    }
+
+    .skill-summary {
+      font-size: 0.75rem;
+      color: #5b6983;
+      line-height: 1.35;
+      background: #f6f9ff;
+      border: 1px solid #dbe5f7;
+      border-radius: 8px;
+      padding: 6px 8px;
     }
 
     .modal {
@@ -639,7 +694,7 @@
       }
 
       .gallery {
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+        grid-template-columns: 1fr;
       }
 
       .action-row {
@@ -746,7 +801,7 @@
 
           <div class="action-row">
             <button id="startBtn" class="btn-brand" disabled>Processar todas</button>
-            <button id="zipBtn" class="btn-alt" disabled>Baixar aprovadas (0 PNGs)</button>
+            <button id="zipBtn" class="btn-alt" disabled>Baixar processadas (0 PNGs)</button>
             <button id="stopBtn" disabled>Cancelar lote</button>
             <button id="clearBtn" disabled>Limpar lote</button>
           </div>
@@ -759,7 +814,7 @@
             <span class="kpi-desc">Fotos adicionadas</span>
           </div>
           <div class="kpi" aria-live="polite">
-            <span class="kpi-title">Aprovadas</span>
+            <span class="kpi-title">Prontas</span>
             <strong id="kpiDone">0</strong>
             <span class="kpi-desc">Prontas para baixar</span>
           </div>
@@ -827,6 +882,18 @@
       confirmPoints: document.getElementById("confirmPoints")
     };
 
+    // Pipeline steps that used to be checkboxes in the hero panel. Values match the
+    // defaults those checkboxes shipped with.
+    const PIPELINE = {
+      edgeFill: true,
+      generativeFill: false,
+      // Both off with MODNet: it mattes the person itself, so rulers and
+      // watermarks never enter the matte and these heuristics only risk eating
+      // hair detail. Delete them once the new cutout is validated.
+      strayRemoval: false,
+      overlayRemoval: false
+    };
+
     const stageCtx = els.stage.getContext("2d");
     let previewURLs = [];
 
@@ -862,7 +929,96 @@
     }
 
     function exportableItems() {
-      return state.items.filter(item => item.status === "done" && item.review !== "rejected" && item.outputs);
+      return state.items.filter(item => item.status === "done" && item.outputs);
+    }
+
+    function pushSkillLog(item, step, message) {
+      item.skillLog = item.skillLog || [];
+      item.skillLog.push({ step, message, at: new Date().toISOString() });
+    }
+
+    async function analyzePortrait(item) {
+      const width = item.img?.naturalWidth || 0;
+      const height = item.img?.naturalHeight || 0;
+      const megaPixels = (width * height) / 1000000;
+      const lowResolution = megaPixels < 0.8;
+      const needsOutpainting = PIPELINE.edgeFill;
+
+      let faceCount = item.img?.detectedFaceCount;
+      if (faceCount === undefined) {
+        try {
+          await detectEyes(item.img);
+          faceCount = item.img?.detectedFaceCount;
+        } catch {
+          faceCount = item.img?.detectedFaceCount ?? 0;
+        }
+      }
+
+      const canAutoProcess = faceCount === 1;
+      const analysis = {
+        size: { width, height, megaPixels: Number(megaPixels.toFixed(2)) },
+        faceCount,
+        flags: {
+          lowResolution,
+          needsOutpainting,
+          likelyNeedsRestoration: lowResolution || megaPixels < 1.4
+        },
+        confidence: canAutoProcess ? "high" : "low",
+        recommended: {
+          cleanup: true,
+          reconstruction: false,
+          outpainting: needsOutpainting,
+          restoration: true,
+          framing: true,
+          quality: true
+        },
+        mode: canAutoProcess ? "auto" : "manual_review"
+      };
+
+      item.analysis = analysis;
+      pushSkillLog(item, "Intelligent Portrait Analyzer", `faces=${faceCount}; ${analysis.mode}`);
+      return analysis;
+    }
+
+    async function runQualityControl(item, settings, warning) {
+      const issues = [];
+      if (item.img?.detectedFaceCount !== 1) issues.push("Face detection inconsistente para processamento automático.");
+      if (!item.outputs?.length) issues.push("Saída ausente após pipeline.");
+      if (warning) issues.push(warning);
+
+      const status = issues.length ? "manual_review" : "approved";
+      item.qc = {
+        status,
+        issues,
+        checkedAt: new Date().toISOString(),
+        framing: {
+          eyeLineRatio: settings.eyeLineRatio,
+          targetEyeDistance: Math.round(settings.targetEyeDistance)
+        }
+      };
+      pushSkillLog(item, "Portrait Quality Control", status === "approved" ? "Aprovado para exportação." : "Requer revisão manual.");
+      return item.qc;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function downloadItemOutputs(item, itemIndex) {
+      if (!item?.outputs?.length || state.busy || state.importing || state.activeIndex >= 0) return;
+      const formats = selectedFormats();
+      const entries = item.outputs.filter(output => formats.includes(output.shape));
+      entries.forEach((output) => {
+        const filename = `${String(itemIndex + 1).padStart(3, "0")}_${exportBaseName(item)}_${output.shape}.png`;
+        downloadBlob(output.blob, filename);
+      });
     }
 
     function clearAlignmentPreview() {
@@ -879,12 +1035,14 @@
       render();
       try {
         const outputs = await processCurrentItem(true);
-        for (const output of outputs) {
+        const square = outputs.find((output) => output.shape === "quadrada");
+        if (square) {
+          const mockup = await createUniversalMockupBlob(square.blob);
           const image = document.createElement("img");
           image.className = "result";
-          image.src = URL.createObjectURL(output.blob);
+          image.src = URL.createObjectURL(mockup);
           previewURLs.push(image.src);
-          image.alt = `Prévia ${output.shape}`;
+          image.alt = "Prévia universal";
           document.getElementById("alignmentPreview").appendChild(image);
         }
         els.hint.textContent = "Prévia atualizada. Confirme para substituir o resultado.";
@@ -903,21 +1061,213 @@
     const TOP_MARGIN_MM = 12;
     const OUTPUT_MM = CIRCLE_MM + SAFETY_MM * 2;
     const STANDARD_FRAMING = { eyeRatio: 0.205, bodyPercentile: 0.94 };
+    const SHAPE_EYE_SCALE = {
+      quadrada: 0.88,
+      redonda: 1.08
+    };
+    const SIMPLE_FILL_PADDING_RATIO = 0.2;
     const PIXELS_PER_METER = Math.round(OUTPUT_SIZE * 1000 / OUTPUT_MM);
     const MODEL_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/";
+    const GENERATIVE_FILL_ENDPOINT = "http://127.0.0.1:8001/inpaint";
+    // MODNet: portrait matting, Apache 2.0, 26 MB. Measured against BiRefNet_lite,
+    // which is better on paper but aborts the WASM heap at its fixed 1024x1024 and
+    // therefore only ever ran when WebGPU happened to be available.
+    //
+    // Verified against the real model: input "input", output "output", normalization
+    // to [-1,1], aspect ratio preserved with both sides multiples of 32, and the
+    // output is already an alpha matte in [0,1] — it must NOT be passed through a
+    // sigmoid, which would flatten it to uniform grey.
+    const MATTE_MODEL = {
+      runtime: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/",
+      weights: "https://huggingface.co/Xenova/modnet/resolve/main/onnx/model.onnx",
+      // The trained resolution, and it matters: measured at 1024 the network invents
+      // large patches of background around the hair. At 512 they disappear.
+      shortestEdge: 512,
+      longestEdge: 768,
+      divisor: 32,
+      islandRatio: 0.02,
+      inputName: "input",
+      outputName: "output"
+    };
     let segmenterPromise;
     let faceDetectorPromise;
+    let matteSessionPromise;
+    let matteBackend = null;
+    let pendingMatteFallback = null;
     let modelFailure = null;
 
     function releaseItem(item) {
       URL.revokeObjectURL(item.thumbURL);
       for (const output of item.outputs || []) URL.revokeObjectURL(output.url);
+      if (item.mockupURL) URL.revokeObjectURL(item.mockupURL);
       item.img.src = "";
     }
 
     function releaseOutputs(item) {
       for (const output of item.outputs || []) URL.revokeObjectURL(output.url);
       item.outputs = null;
+      if (item.mockupURL) {
+        URL.revokeObjectURL(item.mockupURL);
+        item.mockupURL = null;
+      }
+    }
+
+    async function blobToImage(blob) {
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      try {
+        img.src = url;
+        await img.decode();
+        return img;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    async function createUniversalMockupBlob(squareBlob) {
+      const img = await blobToImage(squareBlob);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+
+      const settings = getSettings();
+      const strokeOuter = Math.max(2, Math.round(canvas.width * 0.003));
+      const strokeInner = Math.max(2, Math.round(canvas.width * 0.0025));
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(71, 120, 230, 0.95)";
+      ctx.lineWidth = strokeOuter;
+      ctx.strokeRect(strokeOuter / 2, strokeOuter / 2, canvas.width - strokeOuter, canvas.height - strokeOuter);
+
+      const side = settings.circleRadius * 2;
+      const x = (canvas.width - side) / 2;
+      const y = (canvas.height - side) / 2;
+      ctx.strokeStyle = "rgba(124, 58, 237, 0.95)";
+      ctx.lineWidth = strokeInner;
+      ctx.strokeRect(x, y, side, side);
+
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, settings.circleRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      return encodePng(canvas);
+    }
+
+    function createSimpleFillSource(img, eyeL, eyeR) {
+      const padX = Math.max(24, Math.round(img.naturalWidth * SIMPLE_FILL_PADDING_RATIO));
+      const padY = Math.max(24, Math.round(img.naturalHeight * SIMPLE_FILL_PADDING_RATIO));
+      const width = img.naturalWidth + padX * 2;
+      const height = img.naturalHeight + padY * 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+
+      // Center original image and extend borders by stretching edge pixels.
+      ctx.drawImage(img, padX, padY);
+      ctx.drawImage(img, 0, 0, 1, img.naturalHeight, 0, padY, padX, img.naturalHeight);
+      ctx.drawImage(img, img.naturalWidth - 1, 0, 1, img.naturalHeight, padX + img.naturalWidth, padY, padX, img.naturalHeight);
+      ctx.drawImage(img, 0, 0, img.naturalWidth, 1, padX, 0, img.naturalWidth, padY);
+      ctx.drawImage(img, 0, img.naturalHeight - 1, img.naturalWidth, 1, padX, padY + img.naturalHeight, img.naturalWidth, padY);
+
+      ctx.drawImage(img, 0, 0, 1, 1, 0, 0, padX, padY);
+      ctx.drawImage(img, img.naturalWidth - 1, 0, 1, 1, padX + img.naturalWidth, 0, padX, padY);
+      ctx.drawImage(img, 0, img.naturalHeight - 1, 1, 1, 0, padY + img.naturalHeight, padX, padY);
+      ctx.drawImage(img, img.naturalWidth - 1, img.naturalHeight - 1, 1, 1,
+        padX + img.naturalWidth, padY + img.naturalHeight, padX, padY);
+
+      // Soften only the stretched border ring; the original area must stay sharp.
+      const softened = document.createElement("canvas");
+      softened.width = width;
+      softened.height = height;
+      const softCtx = softened.getContext("2d");
+      softCtx.filter = "blur(14px)";
+      softCtx.drawImage(canvas, 0, 0);
+      softCtx.filter = "none";
+
+      ctx.save();
+      const ring = new Path2D();
+      ring.rect(0, 0, width, height);
+      ring.rect(padX, padY, img.naturalWidth, img.naturalHeight);
+      ctx.clip(ring, "evenodd");
+      ctx.drawImage(softened, 0, 0);
+      ctx.restore();
+
+      // Redraw the source on top so the photo itself is never degraded.
+      ctx.drawImage(img, padX, padY);
+
+      return {
+        source: canvas,
+        eyeL: { x: eyeL.x + padX, y: eyeL.y + padY },
+        eyeR: { x: eyeR.x + padX, y: eyeR.y + padY },
+        padX,
+        padY,
+        originalWidth: img.naturalWidth,
+        originalHeight: img.naturalHeight
+      };
+    }
+
+    async function canvasToPngBlob(canvas) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error("Falha ao converter canvas para blob."));
+        }, "image/png");
+      });
+    }
+
+    function buildOutpaintMask(width, height, originalWidth, originalHeight, padX, padY) {
+      const mask = document.createElement("canvas");
+      mask.width = width;
+      mask.height = height;
+      const context = mask.getContext("2d");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, width, height);
+      // Let the mask bite a few pixels into the original so the generated area
+      // continues across the seam instead of butting against it.
+      const overlap = Math.max(2, Math.round(Math.min(originalWidth, originalHeight) * 0.005));
+      context.fillStyle = "#000000";
+      context.fillRect(
+        padX + overlap,
+        padY + overlap,
+        Math.max(1, originalWidth - overlap * 2),
+        Math.max(1, originalHeight - overlap * 2)
+      );
+      return mask;
+    }
+
+    async function runGenerativeFill(sourceCanvas, maskCanvas) {
+      const imageBlob = await canvasToPngBlob(sourceCanvas);
+      const maskBlob = await canvasToPngBlob(maskCanvas);
+
+      const formData = new FormData();
+      formData.append("image", imageBlob, "image.png");
+      formData.append("mask", maskBlob, "mask.png");
+      formData.append("prompt", "natural continuation of hairstyle and portrait edges, consistent lighting, realistic texture");
+      formData.append("negative_prompt", "distorted face, deformed anatomy, duplicated hair, blurry, artifacts");
+      formData.append("num_inference_steps", "30");
+      formData.append("guidance_scale", "7.0");
+
+      const response = await fetch(GENERATIVE_FILL_ENDPOINT, {
+        method: "POST",
+        body: formData
+      });
+      if (!response.ok) {
+        const payload = await response.text();
+        throw new Error(`Preenchimento IA falhou (${response.status}): ${payload.slice(0, 160)}`);
+      }
+
+      const resultBlob = await response.blob();
+      const image = await blobToImage(resultBlob);
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      return canvas;
     }
 
     function removeItem(item) {
@@ -1005,6 +1355,8 @@
       img.detectedFaceCount = faces.length;
       if (faces.length !== 1) throw new Error(faces.length ? "Foto de grupo não suportada. Use uma foto individual." : "Rosto não detectado. Marque os olhos manualmente.");
       const landmarks = faces[0];
+      // Eye-corner midpoints. The framing constants (STANDARD_FRAMING.eyeRatio) are
+      // calibrated against this exact measurement; do not swap it without recalibrating.
       const points = [[33, 133], [362, 263]].map(([first, second]) => ({
         x: (landmarks[first].x + landmarks[second].x) * img.naturalWidth / 2,
         y: (landmarks[first].y + landmarks[second].y) * img.naturalHeight / 2
@@ -1089,11 +1441,252 @@
       return imageData;
     }
 
-    async function removeBackground(img) {
+    // Deliberately does not use withTimeout: that helper latches the global
+    // modelFailure, which would take the face and segmentation models down with it.
+    function loadExternalScript(url, timeout) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        const timer = setTimeout(() => {
+          script.remove();
+          reject(new Error("Tempo esgotado ao baixar o runtime de recorte."));
+        }, timeout);
+        script.src = url;
+        script.crossOrigin = "anonymous";
+        script.onload = () => { clearTimeout(timer); resolve(); };
+        script.onerror = () => {
+          clearTimeout(timer);
+          script.remove();
+          reject(new Error("Não foi possível baixar o runtime de recorte."));
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    // Downloads once and keeps the weights in the Cache API, so only the first run
+    // pays the download. Streams the body to report progress on a file this large.
+    async function fetchMatteWeights(report) {
+      let cache = null;
+      try {
+        cache = window.caches ? await caches.open("portrait-studio-models") : null;
+      } catch {
+        cache = null;
+      }
+      if (cache) {
+        try {
+          const hit = await cache.match(MATTE_MODEL.weights);
+          if (hit) return await hit.arrayBuffer();
+        } catch { /* cache unavailable, fall through to network */ }
+      }
+
+      const response = await fetch(MATTE_MODEL.weights);
+      if (!response.ok) throw new Error(`Falha ao baixar o modelo de recorte (${response.status}).`);
+
+      let buffer;
+      const reader = response.body?.getReader?.();
+      if (!reader) {
+        buffer = await response.arrayBuffer();
+      } else {
+        const total = Number(response.headers.get("content-length")) || 0;
+        const chunks = [];
+        let loaded = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          loaded += value.length;
+          report(total
+            ? `Baixando modelo de recorte: ${Math.round(loaded / total * 100)}% (só na primeira vez)`
+            : `Baixando modelo de recorte: ${Math.round(loaded / 1048576)} MB`);
+        }
+        buffer = await new Blob(chunks).arrayBuffer();
+      }
+
+      if (cache) {
+        try { await cache.put(MATTE_MODEL.weights, new Response(buffer)); }
+        catch { /* over quota; it will just download again next session */ }
+      }
+      return buffer;
+    }
+
+    async function getMatteSession(report) {
+      if (!matteSessionPromise) {
+        matteSessionPromise = (async () => {
+          report("Carregando runtime de recorte...");
+          await loadExternalScript(MATTE_MODEL.runtime + "ort.all.min.js", 120000);
+          if (!window.ort) throw new Error("Runtime de recorte não inicializou.");
+          window.ort.env.wasm.wasmPaths = MATTE_MODEL.runtime;
+
+          const weights = await fetchMatteWeights(report);
+          report("Preparando modelo de recorte...");
+
+          // WebGPU is dramatically faster; WASM works everywhere but is slow.
+          const providers = navigator.gpu ? ["webgpu", "wasm"] : ["wasm"];
+          let lastError;
+          for (const provider of providers) {
+            try {
+              // A Uint8Array view, not a copy: the weights are ~224 MB and copying
+              // them per attempt is enough to blow up the tab.
+              const session = await window.ort.InferenceSession.create(new Uint8Array(weights), {
+                executionProviders: [provider],
+                graphOptimizationLevel: "all"
+              });
+              matteBackend = provider;
+              return session;
+            } catch (error) {
+              lastError = error;
+            }
+          }
+          throw lastError || new Error("Nenhum backend de inferência disponível.");
+        })().catch((error) => { matteSessionPromise = null; throw error; });
+      }
+      return matteSessionPromise;
+    }
+
+    // Drops small detached blobs of misclassified background. Binarizes at 128 so
+    // faint alpha does not bridge an island to the subject and protect it.
+    function pruneMatteIslands(matte, width, height) {
+      const total = width * height;
+      const solid = new Uint8Array(total);
+      for (let i = 0; i < total; i++) solid[i] = matte[i * 4 + 3] >= 128 ? 255 : 0;
+
+      const { labels, sizes } = labelComponents(solid, width, height);
+      const largest = sizes.reduce((maximum, size) => Math.max(maximum, size), 0);
+      if (!largest) return;
+
+      const minimum = largest * MATTE_MODEL.islandRatio;
+      for (let i = 0; i < total; i++) {
+        if (labels[i] && sizes[labels[i]] < minimum) matte[i * 4 + 3] = 0;
+      }
+    }
+
+    // MODNet produces a soft alpha matte with real hair detail, unlike the coarse
+    // binary-ish mask from selfie segmentation.
+    async function matteWithModel(img, session, report) {
+      const sourceWidth = img.naturalWidth || img.videoWidth || img.width;
+      const sourceHeight = img.naturalHeight || img.videoHeight || img.height;
+
+      // Aspect ratio is preserved (the model was trained that way) and both sides are
+      // snapped to multiples of 32, which the network requires.
+      const shortest = Math.min(sourceWidth, sourceHeight);
+      const longest = Math.max(sourceWidth, sourceHeight);
+      const scale = Math.min(
+        MATTE_MODEL.shortestEdge / shortest,
+        MATTE_MODEL.longestEdge / longest
+      );
+      const snap = (value) => Math.max(
+        MATTE_MODEL.divisor,
+        Math.round(value * scale / MATTE_MODEL.divisor) * MATTE_MODEL.divisor
+      );
+      const inputWidth = snap(sourceWidth);
+      const inputHeight = snap(sourceHeight);
+
+      const input = document.createElement("canvas");
+      input.width = inputWidth;
+      input.height = inputHeight;
+      const inputContext = input.getContext("2d", { willReadFrequently: true });
+      inputContext.imageSmoothingEnabled = true;
+      inputContext.imageSmoothingQuality = "high";
+      const { source } = prepareResampledSource(img, scale);
+      inputContext.drawImage(source, 0, 0, inputWidth, inputHeight);
+
+      const pixels = inputContext.getImageData(0, 0, inputWidth, inputHeight).data;
+      const plane = inputWidth * inputHeight;
+      const tensorData = new Float32Array(plane * 3);
+      // MODNet normalizes to [-1,1], not with ImageNet statistics.
+      for (let i = 0; i < plane; i++) {
+        const p = i * 4;
+        tensorData[i] = pixels[p] / 127.5 - 1;
+        tensorData[i + plane] = pixels[p + 1] / 127.5 - 1;
+        tensorData[i + plane * 2] = pixels[p + 2] / 127.5 - 1;
+      }
+
+      report(`Recortando com MODNet (${matteBackend === "webgpu" ? "GPU" : "CPU"})...`);
+      const tensor = new window.ort.Tensor("float32", tensorData, [1, 3, inputHeight, inputWidth]);
+
+      // Read the tensor names off the session instead of hardcoding them: a different
+      // export names them differently and session.run would throw.
+      const inputName = session.inputNames?.includes(MATTE_MODEL.inputName)
+        ? MATTE_MODEL.inputName
+        : session.inputNames?.[0];
+      if (!inputName) throw new Error("Modelo de recorte sem entrada declarada.");
+
+      const results = await session.run({ [inputName]: tensor });
+      const output = results[MATTE_MODEL.outputName]
+        || results[session.outputNames?.[0]]
+        || Object.values(results).pop();
+      if (!output?.data?.length) throw new Error("Saída inesperada do modelo de recorte.");
+
+      // Derive the mask size from the output instead of assuming it matches the input.
+      const dims = output.dims || [];
+      const maskHeight = dims.length >= 2 ? dims[dims.length - 2] : inputHeight;
+      const maskWidth = dims.length >= 2 ? dims[dims.length - 1] : inputWidth;
+      const maskPixels = maskWidth * maskHeight;
+      if (output.data.length < maskPixels) {
+        throw new Error(`Saída do modelo menor que o esperado (${output.data.length} < ${maskPixels}).`);
+      }
+
+      // Already an alpha matte in [0,1] — no sigmoid. Applying one here would push
+      // every value toward 0.5 and produce a uniformly translucent cutout.
+      const values = output.data;
+      const matte = new Uint8ClampedArray(maskPixels * 4);
+      for (let i = 0; i < maskPixels; i++) {
+        const p = i * 4;
+        matte[p] = matte[p + 1] = matte[p + 2] = 255;
+        matte[p + 3] = values[i] * 255;
+      }
+      pruneMatteIslands(matte, maskWidth, maskHeight);
+
+      const maskCanvas = document.createElement("canvas");
+      maskCanvas.width = maskWidth;
+      maskCanvas.height = maskHeight;
+      maskCanvas.getContext("2d").putImageData(new ImageData(matte, maskWidth, maskHeight), 0, 0);
+
+      const foreground = document.createElement("canvas");
+      foreground.width = sourceWidth;
+      foreground.height = sourceHeight;
+      const context = foreground.getContext("2d");
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(maskCanvas, 0, 0, sourceWidth, sourceHeight);
+      context.globalCompositeOperation = "source-in";
+      context.drawImage(img, 0, 0);
+      context.globalCompositeOperation = "source-over";
+
+      decontaminateEdges(foreground, 160);
+      return foreground;
+    }
+
+    async function removeBackground(img, report = () => { }) {
+      let foreground;
+      try {
+        const session = await getMatteSession(report);
+        foreground = await matteWithModel(img, session, report);
+      } catch (error) {
+        // Only infrastructure failures land here — offline, unsupported browser,
+        // failed download, unsupported operator. Keep the batch usable with the old
+        // lightweight model rather than aborting.
+        pendingMatteFallback = error.message;
+        // Logged with the stack: this is the only place the real cause is visible.
+        console.error("Recorte MODNet indisponível, usando fallback:", error);
+        report("Modelo de recorte indisponível; usando o modelo leve.");
+        foreground = await removeBackgroundWithSelfieSegmentation(img);
+      }
+      // Outside the catch on purpose: a bad cutout must surface as an error, not be
+      // silently retried with a worse model.
+      validateForeground(foreground);
+      return foreground;
+    }
+
+    async function removeBackgroundWithSelfieSegmentation(img) {
       const segmenter = await getSegmenter();
       const foreground = document.createElement("canvas");
-      foreground.width = img.naturalWidth;
-      foreground.height = img.naturalHeight;
+      const sourceWidth = img.naturalWidth || img.videoWidth || img.width;
+      const sourceHeight = img.naturalHeight || img.videoHeight || img.height;
+      if (!sourceWidth || !sourceHeight) {
+        throw new Error("Não foi possível ler o tamanho da imagem para remover o fundo.");
+      }
+      foreground.width = sourceWidth;
+      foreground.height = sourceHeight;
       const context = foreground.getContext("2d");
       let received = false;
       let accepting = true;
@@ -1117,7 +1710,7 @@
       try {
         await withTimeout(segmenter.send({ image: img }), 120000);
         if (!received) throw new Error("O modelo não retornou uma máscara.");
-        validateForeground(foreground);
+        decontaminateEdges(foreground);
         return foreground;
       } catch (error) {
         segmenterPromise = null;
@@ -1128,11 +1721,388 @@
       }
     }
 
+    // MODNet mattes whatever it reads as the portrait subject, which is usually the
+    // person but could be anything. The face landmarks are what actually prove a human
+    // is there; this checks that the matte kept that face, tying the two models together.
+    function validateHumanMatte(canvas, eyeL, eyeR) {
+      const eyeDistance = Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y);
+      const centerX = Math.round((eyeL.x + eyeR.x) / 2);
+      const centerY = Math.round((eyeL.y + eyeR.y) / 2);
+      const radius = Math.max(2, Math.round(eyeDistance * 0.4));
+      const x = Math.max(0, centerX - radius);
+      const y = Math.max(0, centerY - radius);
+      const width = Math.min(canvas.width - x, radius * 2);
+      const height = Math.min(canvas.height - y, radius * 2);
+      if (width <= 0 || height <= 0) throw new Error("Rosto fora da área recortada.");
+
+      const pixels = canvas.getContext("2d", { willReadFrequently: true })
+        .getImageData(x, y, width, height).data;
+      let total = 0;
+      for (let offset = 3; offset < pixels.length; offset += 4) total += pixels[offset];
+      const average = total / (pixels.length / 4);
+      if (average < 128) {
+        throw new Error("O recorte não preservou o rosto detectado. Revise a foto manualmente.");
+      }
+    }
+
     function clampByte(value) {
       return value < 0 ? 0 : value > 255 ? 255 : value;
     }
 
-    // Topaz-like local enhancement pass for portraits: tonal normalize + subtle detail boost.
+    // Tuning for the foreign-element cleanup. All radii are expressed for a 512px
+    // analysis canvas and scaled from there.
+    const FOREIGN_CLEANUP = {
+      workSide: 512,
+      openRadius: 1,
+      minComponentRatio: 0.05,
+      // A stray rule is thin AND small. Hair is thin but belongs to a large piece of
+      // the body, so capping the removable area is what keeps the cutout intact.
+      maxStrayAreaRatio: 0.02,
+      localMeanRadius: 12,
+      residualThreshold: 90,
+      maxOverlayAreaRatio: 0.004,
+      thicknessRadius: 1,
+      faceProtectFactor: 2.0,
+      patchDilation: 2
+    };
+
+    // Separable min/max filter (erosion when useMax is false, dilation when true).
+    // Borders replicate the edge pixel so a subject touching the frame is not trimmed.
+    function morphology(source, width, height, radius, useMax) {
+      const temp = new Uint8Array(source.length);
+      for (let y = 0; y < height; y++) {
+        const row = y * width;
+        for (let x = 0; x < width; x++) {
+          let value = useMax ? 0 : 255;
+          for (let d = -radius; d <= radius; d++) {
+            const nx = x + d < 0 ? 0 : x + d >= width ? width - 1 : x + d;
+            const candidate = source[row + nx];
+            if (useMax ? candidate > value : candidate < value) value = candidate;
+          }
+          temp[row + x] = value;
+        }
+      }
+      const result = new Uint8Array(source.length);
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          let value = useMax ? 0 : 255;
+          for (let d = -radius; d <= radius; d++) {
+            const ny = y + d < 0 ? 0 : y + d >= height ? height - 1 : y + d;
+            const candidate = temp[ny * width + x];
+            if (useMax ? candidate > value : candidate < value) value = candidate;
+          }
+          result[y * width + x] = value;
+        }
+      }
+      return result;
+    }
+
+    function labelComponents(mask, width, height) {
+      const labels = new Int32Array(width * height);
+      const queue = new Int32Array(labels.length);
+      const sizes = [0];
+      for (let start = 0; start < labels.length; start++) {
+        if (labels[start] || !mask[start]) continue;
+        const label = sizes.length;
+        let head = 0;
+        let tail = 1;
+        queue[0] = start;
+        labels[start] = label;
+        while (head < tail) {
+          const current = queue[head++];
+          const column = current % width;
+          const row = (current - column) / width;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = column + dx;
+              const ny = row + dy;
+              if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+              const neighbor = ny * width + nx;
+              if (labels[neighbor] || !mask[neighbor]) continue;
+              labels[neighbor] = label;
+              queue[tail++] = neighbor;
+            }
+          }
+        }
+        sizes.push(tail);
+      }
+      return { labels, sizes };
+    }
+
+    function downscaleForAnalysis(canvas, maxSide) {
+      const scale = Math.min(1, maxSide / Math.max(canvas.width, canvas.height));
+      const width = Math.max(1, Math.round(canvas.width * scale));
+      const height = Math.max(1, Math.round(canvas.height * scale));
+      const { source } = prepareResampledSource(canvas, scale);
+      const small = document.createElement("canvas");
+      small.width = width;
+      small.height = height;
+      const context = small.getContext("2d", { willReadFrequently: true });
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(source, 0, 0, width, height);
+      return { width, height, data: context.getImageData(0, 0, width, height).data };
+    }
+
+    // Rulers, guide lines and crop marks reach the cutout as thin filaments attached
+    // to the body. A morphological opening deletes anything thinner than the subject
+    // while leaving the silhouette itself intact.
+    function pruneThinStructures(canvas, analysis) {
+      const { width, height, data } = analysis;
+      const size = width * height;
+      const solid = new Uint8Array(size);
+      for (let i = 0; i < size; i++) solid[i] = data[i * 4 + 3] >= 128 ? 255 : 0;
+
+      const radius = Math.max(1, Math.round(Math.max(width, height) * FOREIGN_CLEANUP.openRadius / FOREIGN_CLEANUP.workSide));
+      const eroded = morphology(solid, width, height, radius, false);
+      const { labels, sizes } = labelComponents(eroded, width, height);
+      const largest = sizes.reduce((maximum, value) => Math.max(maximum, value), 0);
+      if (!largest) return 0;
+
+      const minimum = largest * FOREIGN_CLEANUP.minComponentRatio;
+      const seed = new Uint8Array(size);
+      for (let i = 0; i < size; i++) {
+        if (labels[i] && sizes[labels[i]] >= minimum) seed[i] = 255;
+      }
+
+      // Dilate past the original erosion so the real outline is never trimmed; the
+      // kept region ends up slightly outside the body, in already-transparent pixels.
+      const keep = morphology(seed, width, height, radius + 2, true);
+
+      // Only drop small strays. Anything large that the opening flagged is part of the
+      // subject (hair, shoulder) and must stay, otherwise the cutout gets mangled.
+      const stray = new Uint8Array(size);
+      for (let i = 0; i < size; i++) if (solid[i] && !keep[i]) stray[i] = 255;
+      const strayParts = labelComponents(stray, width, height);
+      const maxStray = largest * FOREIGN_CLEANUP.maxStrayAreaRatio;
+
+      const discard = new Uint8Array(size);
+      let removed = 0;
+      for (let i = 0; i < size; i++) {
+        const label = strayParts.labels[i];
+        if (!label || strayParts.sizes[label] > maxStray) continue;
+        discard[i] = 255;
+        removed++;
+      }
+      if (!removed) return 0;
+
+      const maskCanvas = document.createElement("canvas");
+      maskCanvas.width = width;
+      maskCanvas.height = height;
+      const maskData = new ImageData(width, height);
+      for (let i = 0; i < size; i++) maskData.data[i * 4 + 3] = discard[i] ? 0 : 255;
+      maskCanvas.getContext("2d").putImageData(maskData, 0, 0);
+
+      const context = canvas.getContext("2d");
+      context.save();
+      // Nearest sampling: the mask boundary sits outside the subject, so scaling it
+      // up without smoothing keeps the silhouette bit-exact.
+      context.imageSmoothingEnabled = false;
+      context.globalCompositeOperation = "destination-in";
+      context.drawImage(maskCanvas, 0, 0, canvas.width, canvas.height);
+      context.restore();
+
+      return removed / size;
+    }
+
+    // Watermarks and measurement text printed over the clothing survive segmentation
+    // because they sit inside the body. They are found as small, thin regions whose
+    // color departs sharply from the local garment color, then painted over with it.
+    function removeOverlayGraphics(canvas, eyeL, eyeR, analysis) {
+      const { width, height, data } = analysis;
+      const size = width * height;
+      const scale = width / canvas.width;
+      const eyeDistance = Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y);
+      // Everything from the face up is off limits; only the torso is inspected.
+      const protectY = ((eyeL.y + eyeR.y) / 2 + eyeDistance * FOREIGN_CLEANUP.faceProtectFactor) * scale;
+
+      const inTorso = new Uint8Array(size);
+      let torsoArea = 0;
+      for (let y = Math.max(0, Math.ceil(protectY)); y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = y * width + x;
+          if (data[i * 4 + 3] >= 200) {
+            inTorso[i] = 1;
+            torsoArea++;
+          }
+        }
+      }
+      if (torsoArea < 400) return 0;
+
+      // Integral images over torso pixels give a cheap local average garment color.
+      const stride = width + 1;
+      const sumR = new Float64Array(stride * (height + 1));
+      const sumG = new Float64Array(sumR.length);
+      const sumB = new Float64Array(sumR.length);
+      const sumN = new Float64Array(sumR.length);
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = y * width + x;
+          const p = i * 4;
+          const on = inTorso[i];
+          const idx = (y + 1) * stride + (x + 1);
+          const back = sumR[idx - 1] + sumR[idx - stride] - sumR[idx - stride - 1];
+          sumR[idx] = data[p] * on + back;
+          sumG[idx] = data[p + 1] * on + sumG[idx - 1] + sumG[idx - stride] - sumG[idx - stride - 1];
+          sumB[idx] = data[p + 2] * on + sumB[idx - 1] + sumB[idx - stride] - sumB[idx - stride - 1];
+          sumN[idx] = on + sumN[idx - 1] + sumN[idx - stride] - sumN[idx - stride - 1];
+        }
+      }
+      const rectSum = (table, x0, y0, x1, y1) =>
+        table[(y1 + 1) * stride + (x1 + 1)] - table[y0 * stride + (x1 + 1)]
+        - table[(y1 + 1) * stride + x0] + table[y0 * stride + x0];
+
+      const radius = Math.max(4, Math.round(Math.max(width, height) * FOREIGN_CLEANUP.localMeanRadius / FOREIGN_CLEANUP.workSide));
+      const meanR = new Uint8Array(size);
+      const meanG = new Uint8Array(size);
+      const meanB = new Uint8Array(size);
+      const hasMean = new Uint8Array(size);
+      const candidate = new Uint8Array(size);
+
+      for (let y = 0; y < height; y++) {
+        const y0 = Math.max(0, y - radius);
+        const y1 = Math.min(height - 1, y + radius);
+        for (let x = 0; x < width; x++) {
+          const i = y * width + x;
+          const x0 = Math.max(0, x - radius);
+          const x1 = Math.min(width - 1, x + radius);
+          const count = rectSum(sumN, x0, y0, x1, y1);
+          if (count < 20) continue;
+
+          const r = rectSum(sumR, x0, y0, x1, y1) / count;
+          const g = rectSum(sumG, x0, y0, x1, y1) / count;
+          const b = rectSum(sumB, x0, y0, x1, y1) / count;
+          meanR[i] = clampByte(r);
+          meanG[i] = clampByte(g);
+          meanB[i] = clampByte(b);
+          hasMean[i] = 1;
+
+          if (!inTorso[i]) continue;
+          const p = i * 4;
+          const residual = Math.max(
+            Math.abs(data[p] - r),
+            Math.abs(data[p + 1] - g),
+            Math.abs(data[p + 2] - b)
+          );
+          if (residual > FOREIGN_CLEANUP.residualThreshold) candidate[i] = 255;
+        }
+      }
+
+      // A real garment feature survives an erosion; printed lines and text do not.
+      const thick = morphology(candidate, width, height, FOREIGN_CLEANUP.thicknessRadius, false);
+      const { labels, sizes } = labelComponents(candidate, width, height);
+      const solidComponent = new Uint8Array(sizes.length);
+      for (let i = 0; i < size; i++) if (thick[i] && labels[i]) solidComponent[labels[i]] = 1;
+
+      const maxArea = torsoArea * FOREIGN_CLEANUP.maxOverlayAreaRatio;
+      const remove = new Uint8Array(size);
+      let removed = 0;
+      for (let i = 0; i < size; i++) {
+        const label = labels[i];
+        if (!label || solidComponent[label] || sizes[label] > maxArea) continue;
+        remove[i] = 255;
+        removed++;
+      }
+      if (!removed) return 0;
+
+      const patchMask = morphology(remove, width, height, FOREIGN_CLEANUP.patchDilation, true);
+      const patch = new ImageData(width, height);
+      for (let i = 0; i < size; i++) {
+        if (!hasMean[i]) continue;
+        const p = i * 4;
+        // Color is written everywhere a local garment color is known, not only inside
+        // the mask: upscaling interpolates RGB, and leaving it black outside the mask
+        // would bleed dark halos around every patch.
+        patch.data[p] = meanR[i];
+        patch.data[p + 1] = meanG[i];
+        patch.data[p + 2] = meanB[i];
+        patch.data[p + 3] = patchMask[i] ? data[i * 4 + 3] : 0;
+      }
+
+      const patchCanvas = document.createElement("canvas");
+      patchCanvas.width = width;
+      patchCanvas.height = height;
+      patchCanvas.getContext("2d").putImageData(patch, 0, 0);
+
+      const context = canvas.getContext("2d");
+      context.save();
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      // Smooth upscaling is wanted here: the patch is flat garment color and the
+      // soft edge blends it into the surrounding fabric.
+      context.drawImage(patchCanvas, 0, 0, canvas.width, canvas.height);
+      context.restore();
+
+      return removed / torsoArea;
+    }
+
+    function removeForeignElements(canvas, eyeL, eyeR, options) {
+      let thin = 0;
+      let overlays = 0;
+      let analysis = downscaleForAnalysis(canvas, FOREIGN_CLEANUP.workSide);
+      if (options.strays) {
+        thin = pruneThinStructures(canvas, analysis);
+        // Re-sample when the matte changed so overlay detection sees the cleaned alpha.
+        if (thin) analysis = downscaleForAnalysis(canvas, FOREIGN_CLEANUP.workSide);
+      }
+      if (options.overlays) {
+        overlays = removeOverlayGraphics(canvas, eyeL, eyeR, analysis);
+      }
+      return { thin, overlays };
+    }
+
+    // Semi-transparent edge pixels carry blended background color (the classic halo).
+    // Repaint them with the color of the nearest fully opaque neighbours.
+    // solidThreshold sets how wide the treated band is. A soft matte (MODNet) needs
+    // a narrow band so that genuine semi-transparent hair is left alone; a coarse mask
+    // (selfie segmentation) needs a wider one because its fringe is thicker.
+    function decontaminateEdges(canvas, solidThreshold = 220) {
+      const width = canvas.width;
+      const height = canvas.height;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const imageData = context.getImageData(0, 0, width, height);
+      const pixels = imageData.data;
+      const source = new Uint8ClampedArray(pixels);
+      const radius = 2;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const index = (y * width + x) * 4;
+          const alpha = source[index + 3];
+          if (alpha === 0 || alpha >= solidThreshold) continue;
+
+          let rSum = 0;
+          let gSum = 0;
+          let bSum = 0;
+          let weight = 0;
+          for (let dy = -radius; dy <= radius; dy++) {
+            const ny = y + dy;
+            if (ny < 0 || ny >= height) continue;
+            for (let dx = -radius; dx <= radius; dx++) {
+              const nx = x + dx;
+              if (nx < 0 || nx >= width) continue;
+              const neighbor = (ny * width + nx) * 4;
+              if (source[neighbor + 3] < solidThreshold) continue;
+              rSum += source[neighbor];
+              gSum += source[neighbor + 1];
+              bSum += source[neighbor + 2];
+              weight++;
+            }
+          }
+          if (!weight) continue;
+
+          // Blend proportionally, capped: a full replacement flattens the edge and
+          // makes the cutout look cut out with scissors.
+          const mix = Math.min(0.6, 1 - alpha / solidThreshold);
+          pixels[index] = clampByte(source[index] * (1 - mix) + (rSum / weight) * mix);
+          pixels[index + 1] = clampByte(source[index + 1] * (1 - mix) + (gSum / weight) * mix);
+          pixels[index + 2] = clampByte(source[index + 2] * (1 - mix) + (bSum / weight) * mix);
+        }
+      }
+      context.putImageData(imageData, 0, 0);
+    }
+
+    // Quality-only enhancement: keep original brightness/color while applying light denoise + subtle sharpening.
     function enhancePortraitCanvas(canvas) {
       const width = canvas.width;
       const height = canvas.height;
@@ -1140,54 +2110,48 @@
       const imageData = context.getImageData(0, 0, width, height);
       const pixels = imageData.data;
 
-      let luminanceMin = 255;
-      let luminanceMax = 0;
-      const gamma = 0.96;
-      const saturationBoost = 1.06;
+      // Light chroma-preserving denoise: tiny 3x3 box blur blended with original.
+      const original = new Uint8ClampedArray(pixels);
+      const denoiseMix = 0.18;
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const index = (y * width + x) * 4;
+          if (original[index + 3] < 20) continue;
 
-      // Find dynamic range using visible foreground pixels only.
-      for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i + 3] < 20) continue;
-        const luminance = 0.2126 * pixels[i] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i + 2];
-        if (luminance < luminanceMin) luminanceMin = luminance;
-        if (luminance > luminanceMax) luminanceMax = luminance;
-      }
+          let rSum = 0;
+          let gSum = 0;
+          let bSum = 0;
+          let count = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const neighbor = ((y + dy) * width + (x + dx)) * 4;
+              if (original[neighbor + 3] < 20) continue;
+              rSum += original[neighbor];
+              gSum += original[neighbor + 1];
+              bSum += original[neighbor + 2];
+              count++;
+            }
+          }
 
-      const range = Math.max(1, luminanceMax - luminanceMin);
-      const lift = 0.5;
+          if (!count) continue;
+          const rBlur = rSum / count;
+          const gBlur = gSum / count;
+          const bBlur = bSum / count;
 
-      for (let i = 0; i < pixels.length; i += 4) {
-        const alpha = pixels[i + 3];
-        if (alpha < 20) continue;
-
-        // Tone normalization and gentle gamma to recover portrait detail.
-        let r = (pixels[i] - luminanceMin) * 255 / range;
-        let g = (pixels[i + 1] - luminanceMin) * 255 / range;
-        let b = (pixels[i + 2] - luminanceMin) * 255 / range;
-
-        r = Math.pow(clampByte(r) / 255, gamma) * 255 + lift;
-        g = Math.pow(clampByte(g) / 255, gamma) * 255 + lift;
-        b = Math.pow(clampByte(b) / 255, gamma) * 255 + lift;
-
-        // Mild saturation increase without skin overprocessing.
-        const gray = (r + g + b) / 3;
-        r = gray + (r - gray) * saturationBoost;
-        g = gray + (g - gray) * saturationBoost;
-        b = gray + (b - gray) * saturationBoost;
-
-        pixels[i] = clampByte(r);
-        pixels[i + 1] = clampByte(g);
-        pixels[i + 2] = clampByte(b);
+          pixels[index] = clampByte(original[index] * (1 - denoiseMix) + rBlur * denoiseMix);
+          pixels[index + 1] = clampByte(original[index + 1] * (1 - denoiseMix) + gBlur * denoiseMix);
+          pixels[index + 2] = clampByte(original[index + 2] * (1 - denoiseMix) + bBlur * denoiseMix);
+        }
       }
 
       context.putImageData(imageData, 0, 0);
 
-      // Subtle unsharp mask pass (browser-native blur + pixel recomposition).
+      // Subtle unsharp mask pass (no exposure/color shift).
       const blurred = document.createElement("canvas");
       blurred.width = width;
       blurred.height = height;
       const blurCtx = blurred.getContext("2d", { willReadFrequently: true });
-      blurCtx.filter = "blur(0.8px)";
+      blurCtx.filter = "blur(0.6px)";
       blurCtx.drawImage(canvas, 0, 0);
       blurCtx.filter = "none";
 
@@ -1195,7 +2159,7 @@
       const blurData = blurCtx.getImageData(0, 0, width, height);
       const sharp = sharpData.data;
       const soft = blurData.data;
-      const amount = 0.42;
+      const amount = 0.26;
 
       for (let i = 0; i < sharp.length; i += 4) {
         if (sharp[i + 3] < 20) continue;
@@ -1241,13 +2205,26 @@
       const url = URL.createObjectURL(file);
       const img = new Image();
       try {
-        img.src = url;
-        await img.decode();
-        const scale = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight));
+        let decoded = img;
+        try {
+          // Honours the EXIF orientation flag, which <img> ignores for canvas draws.
+          decoded = await createImageBitmap(file, { imageOrientation: "from-image" });
+        } catch {
+          img.src = url;
+          await img.decode();
+        }
+        const sourceWidth = decoded.naturalWidth || decoded.width;
+        const sourceHeight = decoded.naturalHeight || decoded.height;
+        const scale = Math.min(1, 2400 / Math.max(sourceWidth, sourceHeight));
+        const { source } = prepareResampledSource(decoded, scale);
         const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
-        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+        canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+        const context = canvas.getContext("2d");
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
+        context.drawImage(source, 0, 0, canvas.width, canvas.height);
+        if (typeof decoded.close === "function") decoded.close();
         const blob = await new Promise((resolve, reject) => canvas.toBlob(
           (result) => result ? resolve(result) : reject(new Error("Falha ao ler imagem.")), "image/png"));
         const workingURL = URL.createObjectURL(blob);
@@ -1277,15 +2254,16 @@
             if (state.items.length >= 30) throw new Error("Limite de 30 fotos por lote.");
             if (!file.type.startsWith("image/")) throw new Error("Formato não reconhecido como imagem.");
             const loaded = await loadImageFromFile(file);
-            const base = sanitizeEditableName(sanitizeName(file.name));
-            const profile = splitProfileName(base);
             state.items.push({
               id: crypto.randomUUID(), file: { name: file.name }, ...loaded,
               name: sanitizeName(file.name),
-              firstName: profile.firstName,
-              lastName: profile.lastName,
+              firstName: "",
+              lastName: "",
               status: "pending",
-              eyes: null
+              eyes: null,
+              analysis: null,
+              qc: null,
+              skillLog: []
             });
             added++;
           } catch (error) {
@@ -1314,7 +2292,7 @@
       els.zipBtn.disabled = exportCount === 0 || state.busy || state.importing;
       els.fileInput.disabled = state.busy || state.importing;
       els.clearBtn.disabled = !total || state.busy || state.importing || state.activeIndex >= 0;
-      els.zipBtn.textContent = `Baixar aprovadas (${exportCount} PNGs)`;
+      els.zipBtn.textContent = `Baixar processadas (${exportCount} PNGs)`;
     }
 
     function statusLabel(status) {
@@ -1337,48 +2315,47 @@
       state.items.forEach((item, index) => {
         const card = document.createElement("article");
         card.className = "card";
-        if (item.outputs?.length) card.classList.add("compact-compare");
 
         const visual = document.createElement("div");
         visual.className = "previews";
-        for (const preview of item.outputs || [{ url: item.thumbURL, shape: "Original" }]) {
-          const image = document.createElement("img");
-          image.className = "result";
-          image.src = preview.url;
-          image.alt = `${item.file.name} - ${preview.shape}`;
-          image.title = preview.shape;
-          visual.appendChild(image);
-        }
+        const preview = item.mockupURL
+          ? { url: item.mockupURL, shape: "Mockup universal" }
+          : item.outputs?.[0] || { url: item.thumbURL, shape: "Original" };
+        const image = document.createElement("img");
+        image.className = "result";
+        image.src = preview.url;
+        image.alt = `${item.file.name} - ${preview.shape}`;
+        image.title = preview.shape;
+        visual.appendChild(image);
+
+        const statusBadge = document.createElement("div");
+        statusBadge.className = "status-badge " + item.status;
+        statusBadge.title = statusLabel(item.status);
+        statusBadge.textContent = item.status === "done" ? "✓" : (item.status === "working" ? "◔" : (item.status === "error" ? "!" : "○"));
+        visual.appendChild(statusBadge);
 
         const meta = document.createElement("div");
         meta.className = "meta";
 
-        const s = document.createElement("div");
-        s.className = "status " + item.status;
-        s.textContent = statusLabel(item.status);
+        const exportFileLabel = document.createElement("div");
+        exportFileLabel.className = "export-file-label";
+        exportFileLabel.textContent = "Nome do Arquivo";
 
-        const name = document.createElement("div");
-        name.className = "file-name";
-        const displayFirst = sanitizeEditableName(item.firstName || "");
-        const displayLast = sanitizeEditableName(item.lastName || "");
-        const fullName = [displayFirst, displayLast].filter(Boolean).join(" ").replace(/_/g, " ").trim();
-        name.textContent = fullName || "nome e sobrenome";
+        const skillSummary = document.createElement("div");
+        skillSummary.className = "skill-summary";
+        const analysisMode = item.analysis?.mode === "manual_review" ? "Análise: revisão manual" : "Análise: fluxo automático";
+        const qcMode = item.qc?.status === "approved"
+          ? "QC: aprovado"
+          : item.qc?.status === "manual_review"
+            ? "QC: revisar"
+            : "QC: pendente";
+        skillSummary.textContent = `${analysisMode} · ${qcMode}`;
 
-        const exportName = document.createElement("div");
-        exportName.className = "export-name";
-        const exportLabel = document.createElement("div");
-        exportLabel.className = "export-name-label";
-        exportLabel.textContent = "Nome de exportação";
-        const exportRow = document.createElement("div");
-        exportRow.className = "export-name-row";
-        const exportPrefix = document.createElement("span");
-        exportPrefix.className = "export-name-prefix";
-        exportPrefix.textContent = "perfil_";
         const fields = document.createElement("div");
-        fields.className = "export-name-fields";
+        fields.className = "name-row";
 
         const firstInput = document.createElement("input");
-        firstInput.className = "export-name-input wrap";
+        firstInput.className = "export-name-input";
         firstInput.type = "text";
         firstInput.placeholder = "Nome";
         firstInput.value = item.firstName || "";
@@ -1390,7 +2367,7 @@
         });
 
         const lastInput = document.createElement("input");
-        lastInput.className = "export-name-input wrap";
+        lastInput.className = "export-name-input";
         lastInput.type = "text";
         lastInput.placeholder = "Sobrenome";
         lastInput.value = item.lastName || "";
@@ -1401,50 +2378,39 @@
           lastInput.value = item.lastName;
         });
 
-        fields.append(firstInput, lastInput);
-        exportRow.append(exportPrefix, fields);
-        exportName.append(exportLabel, exportRow);
+        const divider = document.createElement("span");
+        divider.className = "name-divider";
+        divider.textContent = "_";
+
+        fields.append(firstInput, divider, lastInput);
         if (item.error) {
           const error = document.createElement("div");
           error.className = "tiny";
           error.textContent = item.error;
           meta.appendChild(error);
         }
-        if (item.warning) {
-          const warning = document.createElement("div");
-          warning.className = "tiny";
-          warning.textContent = item.warning;
-          meta.appendChild(warning);
-        }
-
         const btn = document.createElement("button");
+        btn.className = "action-button";
         btn.textContent = item.status === "done" ? "Revisar olhos" : "Marcar olhos";
-        btn.disabled = state.busy || state.importing || item.img.detectedFaceCount > 1;
+        btn.disabled = state.busy || state.importing || (item.img?.detectedFaceCount ?? 0) > 1;
         btn.addEventListener("click", () => openAlignModal(index));
 
         const remove = document.createElement("button");
+        remove.className = "remove-action";
         remove.textContent = "Remover foto";
         remove.disabled = state.busy || state.importing || state.activeIndex >= 0;
         remove.addEventListener("click", () => removeItem(item));
+
+        const downloadSingle = document.createElement("button");
+        downloadSingle.className = "action-button";
+        downloadSingle.textContent = "Baixar foto";
+        downloadSingle.disabled = state.busy || state.importing || state.activeIndex >= 0 || item.status !== "done" || !item.outputs?.length;
+        downloadSingle.addEventListener("click", () => downloadItemOutputs(item, index));
+
         const actions = document.createElement("div");
         actions.className = "photo-actions";
-        actions.append(btn, remove);
-        if (item.status === "done") {
-          const review = document.createElement("select");
-          review.setAttribute("aria-label", `Revisão de ${item.file.name}`);
-          for (const [value, label] of [["pending", "Aguardando aprovação"], ["approved", "Aprovada"], ["rejected", "Rejeitada"]]) {
-            const option = document.createElement("option");
-            option.value = value;
-            option.textContent = label;
-            review.appendChild(option);
-          }
-          review.value = item.review || "pending";
-          review.disabled = state.busy || state.importing;
-          review.className = "review-select";
-          review.addEventListener("change", () => { item.review = review.value; updateKpis(); });
-          meta.appendChild(review);
-        }
-        meta.prepend(exportName, name, s);
+        actions.append(btn, downloadSingle, remove);
+        meta.append(exportFileLabel, fields, skillSummary);
         meta.append(actions);
         card.append(visual, meta);
         els.gallery.appendChild(card);
@@ -1541,6 +2507,111 @@
         stageCtx.lineTo(bx, by);
         stageCtx.stroke();
       }
+
+      drawFramingMask();
+    }
+
+    function sourceToStagePoint(point) {
+      if (!state.stageView) return null;
+      return {
+        x: state.stageView.x + point.x * state.stageView.scale,
+        y: state.stageView.y + point.y * state.stageView.scale
+      };
+    }
+
+    function mapTargetToSource(target, eyeL, sourceAngle, scale, targetL) {
+      const cosine = Math.cos(sourceAngle);
+      const sine = Math.sin(sourceAngle);
+      const dx = (target.x - targetL.x) / scale;
+      const dy = (target.y - targetL.y) / scale;
+      return {
+        x: eyeL.x + dx * cosine - dy * sine,
+        y: eyeL.y + dx * sine + dy * cosine
+      };
+    }
+
+    function getMaskPolygonForShape(eyeL, eyeR, settings, shape, targetRect) {
+      const sourceVec = { x: eyeR.x - eyeL.x, y: eyeR.y - eyeL.y };
+      const sourceDist = Math.hypot(sourceVec.x, sourceVec.y) || 1;
+      const shapeScale = SHAPE_EYE_SCALE[shape] || 1;
+      const shapeEyeDistance = settings.targetEyeDistance * shapeScale;
+      const sourceAngle = Math.atan2(sourceVec.y, sourceVec.x);
+      const scale = shapeEyeDistance / sourceDist;
+      const targetL = {
+        x: (settings.outW - shapeEyeDistance) / 2,
+        y: settings.outH * settings.eyeLineRatio
+      };
+      const corners = [
+        { x: targetRect.x, y: targetRect.y },
+        { x: targetRect.x + targetRect.w, y: targetRect.y },
+        { x: targetRect.x + targetRect.w, y: targetRect.y + targetRect.h },
+        { x: targetRect.x, y: targetRect.y + targetRect.h }
+      ];
+      return corners.map((corner) => mapTargetToSource(corner, eyeL, sourceAngle, scale, targetL));
+    }
+
+    function strokePolygon(points, color, lineWidth) {
+      if (!points.length) return;
+      const stagePoints = points.map(sourceToStagePoint).filter(Boolean);
+      if (stagePoints.length !== points.length) return;
+      stageCtx.save();
+      stageCtx.strokeStyle = color;
+      stageCtx.lineWidth = lineWidth;
+      stageCtx.beginPath();
+      stageCtx.moveTo(stagePoints[0].x, stagePoints[0].y);
+      for (let i = 1; i < stagePoints.length; i++) {
+        stageCtx.lineTo(stagePoints[i].x, stagePoints[i].y);
+      }
+      stageCtx.closePath();
+      stageCtx.stroke();
+      stageCtx.restore();
+    }
+
+    function drawFramingMask() {
+      if (state.points.length !== 2 || !state.stageView) return;
+      const settings = getSettings();
+      const [eyeL, eyeR] = [...state.points].sort((left, right) => left.x - right.x);
+      const outerRect = { x: 0, y: 0, w: settings.outW, h: settings.outH };
+      const circleRect = {
+        x: settings.outW / 2 - settings.circleRadius,
+        y: settings.outH / 2 - settings.circleRadius,
+        w: settings.circleRadius * 2,
+        h: settings.circleRadius * 2
+      };
+
+      const squareMask = getMaskPolygonForShape(eyeL, eyeR, settings, "quadrada", outerRect);
+      const circleSquareMask = getMaskPolygonForShape(eyeL, eyeR, settings, "redonda", circleRect);
+      strokePolygon(squareMask, "rgba(71, 120, 230, 0.95)", 2.5);
+      strokePolygon(circleSquareMask, "rgba(124, 58, 237, 0.95)", 2.5);
+
+      const sourceVec = { x: eyeR.x - eyeL.x, y: eyeR.y - eyeL.y };
+      const sourceDist = Math.hypot(sourceVec.x, sourceVec.y) || 1;
+      const sourceAngle = Math.atan2(sourceVec.y, sourceVec.x);
+      const shapeScale = SHAPE_EYE_SCALE.redonda || 1;
+      const shapeEyeDistance = settings.targetEyeDistance * shapeScale;
+      const scale = shapeEyeDistance / sourceDist;
+      const targetL = {
+        x: (settings.outW - shapeEyeDistance) / 2,
+        y: settings.outH * settings.eyeLineRatio
+      };
+      const centerSource = mapTargetToSource({ x: settings.outW / 2, y: settings.outH / 2 }, eyeL, sourceAngle, scale, targetL);
+      const centerStage = sourceToStagePoint(centerSource);
+      if (centerStage) {
+        stageCtx.save();
+        stageCtx.strokeStyle = "rgba(124, 58, 237, 0.95)";
+        stageCtx.lineWidth = 2;
+        stageCtx.beginPath();
+        stageCtx.arc(centerStage.x, centerStage.y, settings.circleRadius / scale * state.stageView.scale, 0, Math.PI * 2);
+        stageCtx.stroke();
+        stageCtx.restore();
+      }
+
+      stageCtx.save();
+      stageCtx.fillStyle = "rgba(255, 255, 255, 0.9)";
+      stageCtx.font = "12px 'Segoe UI'";
+      stageCtx.fillText("Azul: área da foto quadrada final", 14, 22);
+      stageCtx.fillText("Roxo: zoom/recorte da versão redonda", 14, 40);
+      stageCtx.restore();
     }
 
     function canvasToImageCoords(offsetX, offsetY) {
@@ -1642,24 +2713,99 @@
       const idx = state.activeIndex;
       if (idx < 0) return;
       const item = state.items[idx];
-      const [eyeL, eyeR] = [...state.points].sort((left, right) => left.x - right.x);
-      if (!item || !eyeL || !eyeR) return;
+      const [baseEyeL, baseEyeR] = [...state.points].sort((left, right) => left.x - right.x);
+      if (!item || !baseEyeL || !baseEyeR) return;
       item.draftPoints = state.points.map(point => ({ ...point }));
       if (item.img.detectedFaceCount === undefined) {
         try { await detectEyes(item.img); }
         catch (error) { if (item.img.detectedFaceCount !== 0) throw error; }
       }
       if (item.img.detectedFaceCount > 1) throw new Error("Use uma foto individual.");
-      if (Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y) < 5) throw new Error("Marque dois olhos distintos.");
+      if (Math.hypot(baseEyeR.x - baseEyeL.x, baseEyeR.y - baseEyeL.y) < 5) throw new Error("Marque dois olhos distintos.");
+      const fillEnabled = PIPELINE.edgeFill;
+      const aiFillEnabled = PIPELINE.generativeFill;
+      const analysis = item.analysis || {
+        recommended: {
+          cleanup: true,
+          outpainting: fillEnabled,
+          restoration: true,
+          framing: true,
+          quality: true
+        }
+      };
+      const prepared = fillEnabled
+        ? createSimpleFillSource(item.img, baseEyeL, baseEyeR)
+        : { source: item.img, eyeL: baseEyeL, eyeR: baseEyeR };
+      if (fillEnabled) {
+        pushSkillLog(item, "Intelligent Portrait Outpainting", "Expansão simples por preenchimento de bordas.");
+      }
+      if (fillEnabled && aiFillEnabled && prepared.source instanceof HTMLCanvasElement) {
+        try {
+          const mask = buildOutpaintMask(
+            prepared.source.width,
+            prepared.source.height,
+            prepared.originalWidth,
+            prepared.originalHeight,
+            prepared.padX,
+            prepared.padY
+          );
+          prepared.source = await runGenerativeFill(prepared.source, mask);
+          pushSkillLog(item, "Hair & Edge Reconstruction", "Reconstrução generativa aplicada via API local.");
+        } catch (error) {
+          pushSkillLog(item, "Hair & Edge Reconstruction", `Falha no modo IA: ${error.message}`);
+          els.hint.textContent = "Modo IA indisponível; continuando com preenchimento simples.";
+        }
+      }
+      const eyeL = prepared.eyeL;
+      const eyeR = prepared.eyeR;
       let settings = getSettings();
       els.hint.textContent = "Removendo fundo... O primeiro carregamento pode demorar.";
-      const foreground = await removeBackground(item.img);
-      enhancePortraitCanvas(foreground);
+      pendingMatteFallback = null;
+      const foreground = analysis.recommended.cleanup !== false
+        ? await removeBackground(prepared.source, (message) => { els.hint.textContent = message; })
+        : prepared.source;
+      if (analysis.recommended.cleanup !== false) {
+        validateHumanMatte(foreground, eyeL, eyeR);
+      }
+      pushSkillLog(item, "Smart Background Cleanup", pendingMatteFallback
+        ? `Recorte pelo modelo leve (MODNet indisponível: ${pendingMatteFallback})`
+        : `Recorte por MODNet (${matteBackend === "webgpu" ? "GPU" : "CPU"}).`);
+
+      // Must run before framing: a leftover ruler line would skew the body anchor.
+      let cleanup = null;
+      const cleanupOptions = {
+        strays: PIPELINE.strayRemoval,
+        overlays: PIPELINE.overlayRemoval
+      };
+      if (cleanupOptions.strays || cleanupOptions.overlays) {
+        cleanup = removeForeignElements(foreground, eyeL, eyeR, cleanupOptions);
+        const parts = [];
+        if (cleanup.thin) parts.push("réguas/linhas-guia");
+        if (cleanup.overlays) parts.push("grafismos sobre a roupa");
+        pushSkillLog(item, "Foreign Element Removal", parts.length
+          ? `Removido: ${parts.join(" e ")}.`
+          : "Nenhum elemento estranho detectado.");
+      }
+
+      // Runs at source resolution: the 3x3 denoise is relative to the pixel grid, so
+      // applying it after the downscale makes it roughly twice as strong on the face.
+      if (analysis.recommended.restoration !== false) {
+        enhancePortraitCanvas(foreground);
+        pushSkillLog(item, "Portrait Quality Restoration", "Restauração de qualidade aplicada.");
+      }
       const outputs = [];
       let warning;
       try {
         settings = fitHeadSafety(foreground, eyeL, eyeR, settings);
+        pushSkillLog(item, "Smart Portrait Framing", "Framing inteligente aplicado.");
         warning = framingWarning(foreground, eyeL, eyeR, settings);
+        if (pendingMatteFallback) {
+          warning = [warning, `Recorte de alta qualidade indisponível (${pendingMatteFallback}); usado o modelo leve.`].filter(Boolean).join(" ");
+        }
+        if (cleanup?.overlays) {
+          // Painting over the garment is a heuristic; send it to human review.
+          warning = [warning, "Grafismos sobre a roupa foram cobertos com a cor do tecido. Confira a prévia."].filter(Boolean).join(" ");
+        }
         for (const shape of ["quadrada", "redonda"]) {
           const blob = await renderPortraitBlob(foreground, eyeL, eyeR, { ...settings, shape });
           outputs.push({ shape, blob });
@@ -1672,14 +2818,52 @@
       if (settings.fitCompromised && settings.bodyAnchored) {
         item.warning = [item.warning, "Enquadramento estilo retrato profissional: cabeça preservada e base aproximada pelos ombros."].filter(Boolean).join(" ");
       }
-      item.review = "pending";
       for (const output of outputs) output.url = URL.createObjectURL(output.blob);
       for (const output of item.outputs || []) URL.revokeObjectURL(output.url);
+      if (item.mockupURL) URL.revokeObjectURL(item.mockupURL);
+      const square = outputs.find((output) => output.shape === "quadrada");
+      item.mockupURL = square ? URL.createObjectURL(await createUniversalMockupBlob(square.blob)) : null;
       item.outputs = outputs;
       item.eyes = { eyeL, eyeR };
       item.error = null;
+      if (!previewOnly) {
+        await runQualityControl(item, settings, warning);
+      }
       item.status = "done";
       render();
+    }
+
+    // Canvas bilinear sampling aliases badly when shrinking more than 2x, so step
+    // the source down by halves first and keep the exact ratio that was applied.
+    function prepareResampledSource(img, scale) {
+      const originalWidth = img.naturalWidth || img.width;
+      const originalHeight = img.naturalHeight || img.height;
+      let source = img;
+      let sourceWidth = originalWidth;
+      let sourceHeight = originalHeight;
+      // X and Y must be tracked separately: rounding makes the two axes drift apart,
+      // which would distort the portrait and throw off the framing.
+      let ratioX = 1;
+      let ratioY = 1;
+
+      while (scale / Math.min(ratioX, ratioY) < 0.5 && sourceWidth > 2 && sourceHeight > 2) {
+        const nextWidth = Math.max(1, Math.round(sourceWidth / 2));
+        const nextHeight = Math.max(1, Math.round(sourceHeight / 2));
+        const step = document.createElement("canvas");
+        step.width = nextWidth;
+        step.height = nextHeight;
+        const stepCtx = step.getContext("2d");
+        stepCtx.imageSmoothingEnabled = true;
+        stepCtx.imageSmoothingQuality = "high";
+        stepCtx.drawImage(source, 0, 0, nextWidth, nextHeight);
+        source = step;
+        sourceWidth = nextWidth;
+        sourceHeight = nextHeight;
+        ratioX = nextWidth / originalWidth;
+        ratioY = nextHeight / originalHeight;
+      }
+
+      return { source, ratioX, ratioY };
     }
 
     async function renderPortraitBlob(img, eyeL, eyeR, settings) {
@@ -1692,27 +2876,35 @@
 
       const sourceVec = { x: eyeR.x - eyeL.x, y: eyeR.y - eyeL.y };
       const sourceDist = Math.hypot(sourceVec.x, sourceVec.y) || 1;
+      const shapeScale = SHAPE_EYE_SCALE[settings.shape] || 1;
+      const shapeEyeDistance = settings.targetEyeDistance * shapeScale;
       const targetL = {
-        x: (settings.outW - settings.targetEyeDistance) / 2,
+        x: (settings.outW - shapeEyeDistance) / 2,
         y: settings.outH * settings.eyeLineRatio
       };
       const targetR = {
-        x: targetL.x + settings.targetEyeDistance,
+        x: targetL.x + shapeEyeDistance,
         y: targetL.y
       };
 
       const sourceAngle = Math.atan2(sourceVec.y, sourceVec.x);
       const targetAngle = Math.atan2(targetR.y - targetL.y, targetR.x - targetL.x);
       const rotation = targetAngle - sourceAngle;
-      const scale = settings.targetEyeDistance / sourceDist;
+      const scale = shapeEyeDistance / sourceDist;
+
+      const { source, ratioX, ratioY } = prepareResampledSource(img, scale);
 
       const drawPortrait = () => {
         ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
         ctx.translate(targetL.x, targetL.y);
         ctx.rotate(rotation);
+        // Coordinates stay in original source pixels; the pre-scaling is undone here.
         ctx.scale(scale, scale);
         ctx.translate(-eyeL.x, -eyeL.y);
-        ctx.drawImage(img, 0, 0);
+        ctx.scale(1 / ratioX, 1 / ratioY);
+        ctx.drawImage(source, 0, 0);
         ctx.restore();
       };
 
@@ -1721,8 +2913,7 @@
       if (settings.shape === "redonda") {
         ctx.arc(c.width / 2, c.height / 2, settings.circleRadius, 0, Math.PI * 2);
       } else {
-        ctx.rect(c.width / 2 - settings.circleRadius, c.height / 2 - settings.circleRadius,
-          settings.circleRadius * 2, settings.circleRadius * 2);
+        ctx.rect(0, 0, c.width, c.height);
       }
       ctx.clip();
       drawPortrait();
@@ -1747,6 +2938,13 @@
           els.startBtn.textContent = `Processando ${index + 1} de ${pending.length}`;
           render();
           try {
+            await analyzePortrait(item);
+            if (item.analysis?.mode === "manual_review") {
+              item.status = "error";
+              item.error = "Análise indicou baixa confiança (rosto único não detectado).";
+              pushSkillLog(item, "Intelligent Portrait Analyzer", "Processamento automático bloqueado por baixa confiança.");
+              continue;
+            }
             state.activeIndex = state.items.indexOf(item);
             state.points = await detectEyes(item.img);
             await processCurrentItem();
@@ -1887,7 +3085,7 @@
       if (ready.length === 0 || !formats.length) return;
       state.busy = true;
       render();
-      els.notice.textContent = `Gerando ZIP: ${ready.length} fotos aprovadas; ${state.items.length - ready.length} fotos não incluídas.`;
+      els.notice.textContent = `Gerando ZIP: ${ready.length} fotos prontas; ${state.items.length - ready.length} fotos não incluídas.`;
       try {
 
         const entries = ready.flatMap((item, index) => item.outputs.filter(output => formats.includes(output.shape)).map((output) => ({
