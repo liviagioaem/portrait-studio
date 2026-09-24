@@ -1,0 +1,14 @@
+{
+  "name": "portrait-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local Hugging Face bridge for Portrait Studio",
+  "main": "hf-server.js",
+  "scripts": {
+    "start:hf": "node hf-server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

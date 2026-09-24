@@ -193,6 +193,39 @@
       align-items: center;
     }
 
+    .hf-controls {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfcff;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .hf-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .hf-row label {
+      font-size: 0.88rem;
+      color: #40506a;
+      font-weight: 500;
+    }
+
+    .hf-input {
+      border: 1px solid #cfd8e6;
+      border-radius: 8px;
+      min-height: 34px;
+      padding: 0 10px;
+      background: #fff;
+      color: var(--text);
+      width: min(100%, 380px);
+    }
+
     button {
       border: 1px solid transparent;
       border-radius: 10px;
@@ -810,6 +843,7 @@
             <button id="stopBtn" disabled>Cancelar lote</button>
             <button id="clearBtn" disabled>Limpar lote</button>
           </div>
+
         </div>
 
         <aside class="panel hero-side">
@@ -889,6 +923,100 @@
 
     const stageCtx = els.stage.getContext("2d");
     let previewURLs = [];
+    const qs = new URLSearchParams(window.location.search);
+    const HF_API_ENDPOINT = String(
+      qs.get("hfEndpoint") || window.PORTRAIT_HF_ENDPOINT || "http://localhost:8787"
+    ).trim().replace(/\/+$/, "");
+    const HF_API_MODEL = String(
+      qs.get("hfModel") || window.PORTRAIT_HF_MODEL || "caidas/swin2SR-classical-sr-x2-64"
+    ).trim();
+
+    function getHfConfig() {
+      return {
+        endpoint: HF_API_ENDPOINT,
+        model: HF_API_MODEL
+      };
+    }
+
+    async function imageToPngBlob(img) {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const context = canvas.getContext("2d");
+      context.drawImage(img, 0, 0);
+      return new Promise((resolve, reject) => canvas.toBlob(
+        (result) => result ? resolve(result) : reject(new Error("Falha ao converter imagem para PNG.")), "image/png"
+      ));
+    }
+
+    async function decodeImageBlob(blob) {
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      try {
+        img.src = url;
+        await img.decode();
+      } catch (error) {
+        URL.revokeObjectURL(url);
+        throw error;
+      }
+      return { img, url };
+    }
+
+    async function runHfEnhancement(img, config) {
+      const sourceBlob = await imageToPngBlob(img);
+      const formData = new FormData();
+      formData.append("image", sourceBlob, "portrait.png");
+      formData.append("model", config.model);
+
+      const response = await fetch(`${config.endpoint}/api/hf/enhance`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) {
+        let details = "";
+        try {
+          const body = await response.json();
+          details = body?.error || body?.message || "";
+        } catch (_) {
+          details = (await response.text()).slice(0, 200);
+        }
+        throw new Error(details || `Erro HTTP ${response.status} na melhoria por IA.`);
+      }
+
+      const output = await response.blob();
+      if (!output.type.startsWith("image/")) {
+        throw new Error("A API não retornou uma imagem válida.");
+      }
+      return output;
+    }
+
+    async function ensureEnhancedImage(item) {
+      const config = getHfConfig();
+      if (!config.endpoint) throw new Error("Preencha o endpoint local da API Hugging Face.");
+      if (!config.model) throw new Error("Preencha o nome do modelo Hugging Face.");
+
+      if (item.hfEnhanced && item.hfModel === config.model && item.hfEndpoint === config.endpoint) {
+        return item.hfEnhanced;
+      }
+
+      if (item.hfEnhancedURL) {
+        URL.revokeObjectURL(item.hfEnhancedURL);
+        item.hfEnhancedURL = null;
+      }
+      if (item.hfEnhanced) {
+        item.hfEnhanced.src = "";
+        item.hfEnhanced = null;
+      }
+
+      const enhancedBlob = await runHfEnhancement(item.img, config);
+      const decoded = await decodeImageBlob(enhancedBlob);
+      item.hfEnhanced = decoded.img;
+      item.hfEnhancedURL = decoded.url;
+      item.hfModel = config.model;
+      item.hfEndpoint = config.endpoint;
+      return item.hfEnhanced;
+    }
 
     function selectedFormats() {
       return ["quadrada", "redonda"];
@@ -976,6 +1104,8 @@
     function releaseItem(item) {
       URL.revokeObjectURL(item.thumbURL);
       for (const output of item.outputs || []) URL.revokeObjectURL(output.url);
+      if (item.hfEnhancedURL) URL.revokeObjectURL(item.hfEnhancedURL);
+      if (item.hfEnhanced) item.hfEnhanced.src = "";
       item.img.src = "";
     }
 
@@ -1306,7 +1436,7 @@
       context.putImageData(imageData, 0, 0);
     }
 
-    // Topaz-like local enhancement pass for portraits: tonal normalize + subtle detail boost.
+    // Free local enhancement pass for portraits with automatic strength.
     function enhancePortraitCanvas(canvas) {
       const width = canvas.width;
       const height = canvas.height;
@@ -1316,8 +1446,10 @@
 
       let luminanceMin = 255;
       let luminanceMax = 0;
-      const gamma = 0.96;
-      const saturationBoost = 1.06;
+      const minSide = Math.min(width, height);
+      const isStrong = minSide < 900;
+      const gamma = isStrong ? 0.93 : 0.96;
+      const saturationBoost = isStrong ? 1.1 : 1.06;
 
       // Find dynamic range using visible foreground pixels only.
       for (let i = 0; i < pixels.length; i += 4) {
@@ -1369,7 +1501,7 @@
       const blurData = blurCtx.getImageData(0, 0, width, height);
       const sharp = sharpData.data;
       const soft = blurData.data;
-      const amount = 0.42;
+      const amount = isStrong ? 0.6 : 0.42;
 
       for (let i = 0; i < sharp.length; i += 4) {
         if (sharp[i + 3] < 20) continue;
@@ -1378,6 +1510,22 @@
         sharp[i + 2] = clampByte(sharp[i + 2] + amount * (sharp[i + 2] - soft[i + 2]));
       }
       context.putImageData(sharpData, 0, 0);
+
+      // For lower resolution inputs, add a light upscale/downscale pass for perceived detail.
+      if (isStrong) {
+        const upscaled = document.createElement("canvas");
+        upscaled.width = width * 2;
+        upscaled.height = height * 2;
+        const upCtx = upscaled.getContext("2d");
+        upCtx.imageSmoothingEnabled = true;
+        upCtx.imageSmoothingQuality = "high";
+        upCtx.drawImage(canvas, 0, 0, upscaled.width, upscaled.height);
+
+        context.clearRect(0, 0, width, height);
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
+        context.drawImage(upscaled, 0, 0, width, height);
+      }
     }
 
     async function encodePng(canvas) {
@@ -1825,17 +1973,36 @@
       if (item.img.detectedFaceCount > 1) throw new Error("Use uma foto individual.");
       if (Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y) < 5) throw new Error("Marque dois olhos distintos.");
       let settings = getSettings();
-      els.hint.textContent = "Removendo fundo... O primeiro carregamento pode demorar.";
-      const foreground = await removeBackground(item.img);
+      els.hint.textContent = "Ajustando imagem com IA...";
+      let sourceImage = item.img;
+      try {
+        sourceImage = await ensureEnhancedImage(item);
+        if (sourceImage !== item.img) {
+          els.hint.textContent = "Melhoria por IA concluída. Aplicando recorte...";
+        }
+      } catch (error) {
+        const detail = `Hugging Face indisponível para ${item.file.name}: ${error.message}`;
+        els.notice.textContent = detail;
+        item.hfError = detail;
+        els.hint.textContent = "Falha na API. Continuando com processamento local...";
+        sourceImage = item.img;
+      }
+
+      const eyeScaleX = sourceImage.naturalWidth / item.img.naturalWidth;
+      const eyeScaleY = sourceImage.naturalHeight / item.img.naturalHeight;
+      const adjustedEyeL = { x: eyeL.x * eyeScaleX, y: eyeL.y * eyeScaleY };
+      const adjustedEyeR = { x: eyeR.x * eyeScaleX, y: eyeR.y * eyeScaleY };
+
+      const foreground = await removeBackground(sourceImage);
       enhancePortraitCanvas(foreground);
       cleanFringe(foreground);
       const outputs = [];
       let warning;
       try {
-        settings = fitHeadSafety(foreground, eyeL, eyeR, settings);
-        warning = framingWarning(foreground, eyeL, eyeR, settings);
+        settings = fitHeadSafety(foreground, adjustedEyeL, adjustedEyeR, settings);
+        warning = framingWarning(foreground, adjustedEyeL, adjustedEyeR, settings);
         for (const shape of ["quadrada", "redonda"]) {
-          const blob = await renderPortraitBlob(foreground, eyeL, eyeR, { ...settings, shape });
+          const blob = await renderPortraitBlob(foreground, adjustedEyeL, adjustedEyeR, { ...settings, shape });
           outputs.push({ shape, blob });
         }
       } finally {
