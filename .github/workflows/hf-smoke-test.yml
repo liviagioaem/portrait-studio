@@ -1,0 +1,48 @@
+name: HF Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - improvement/24-09_melhoria_qualidade_foto
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      PORT: 8787
+      HF_MODEL: caidas/swin2SR-classical-sr-x2-64
+      HF_API_KEY: ${{ secrets.HF_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start HF bridge
+        run: node hf-server.js > hf-server.log 2>&1 &
+
+      - name: Wait for health
+        run: |
+          for i in {1..20}; do
+            if curl -sSf http://localhost:8787/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "HF bridge did not become healthy"
+          cat hf-server.log
+          exit 1
+
+      - name: Run HF smoke test
+        run: npm run test:hf
+
+      - name: Dump server log on failure
+        if: failure()
+        run: cat hf-server.log

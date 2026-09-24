@@ -1,12 +1,17 @@
 const express = require("express");
 const multer = require("multer");
 
+require("dotenv").config();
+
 const app = express();
 const upload = multer({ limits: { fileSize: 25 * 1024 * 1024 } });
 
 const PORT = Number(process.env.PORT || 8787);
 const HF_API_KEY =
-  process.env.HF_API_KEY || process.env.POLLINATIONS_API_KEY || "";
+  process.env.HF_API_KEY ||
+  process.env.HF_TOKEN ||
+  process.env.POLLINATIONS_API_KEY ||
+  "";
 const HF_MODEL_DEFAULT =
   process.env.HF_MODEL || "caidas/swin2SR-classical-sr-x2-64";
 
@@ -95,9 +100,10 @@ app.post("/api/hf/enhance", upload.single("image"), async (req, res) => {
     res.setHeader("Content-Type", enhanced.contentType);
     return res.status(200).send(enhanced.data);
   } catch (error) {
+    const rootCause = error?.cause?.message ? ` | cause: ${error.cause.message}` : "";
     return res
       .status(502)
-      .json({ error: error.message || "Falha na melhoria por IA." });
+      .json({ error: (error.message || "Falha na melhoria por IA.") + rootCause });
   }
 });
 
