@@ -1,0 +1,8 @@
+torch
+accelerate
+diffusers
+transformers
+fastapi
+uvicorn[standard]
+pillow
+python-multipart
