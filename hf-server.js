@@ -14,6 +14,8 @@ const HF_API_KEY =
   "";
 const HF_MODEL_DEFAULT =
   process.env.HF_MODEL || "caidas/swin2SR-classical-sr-x2-64";
+const HF_MODEL_FALLBACK =
+  process.env.HF_MODEL_FALLBACK || "caidas/swin2SR-classical-sr-x2-64";
 const HF_INFERENCE_MODE = (process.env.HF_INFERENCE_MODE || "auto").toLowerCase();
 const HF_LOCAL_ENDPOINT =
   process.env.HF_LOCAL_ENDPOINT || "http://127.0.0.1:7860";
@@ -37,11 +39,22 @@ app.get("/health", (_req, res) => {
   res.json({
     ok: true,
     model: HF_MODEL_DEFAULT,
+    fallbackModel: HF_MODEL_FALLBACK,
     mode: HF_INFERENCE_MODE,
     localEndpoint: HF_LOCAL_ENDPOINT,
     hfApiBases: HF_API_BASES,
   });
 });
+
+function shouldTryFallbackModel(errorMessage) {
+  const normalized = String(errorMessage || "").toLowerCase();
+  return (
+    normalized.includes("model not supported") ||
+    normalized.includes("not available for provider") ||
+    normalized.includes("insufficient permissions") ||
+    normalized.includes("invalid username or password")
+  );
+}
 
 async function callLocalInference({ imageBuffer, model, prompt }) {
   const form = new FormData();
@@ -145,6 +158,7 @@ app.post("/api/hf/enhance", upload.single("image"), async (req, res) => {
     const prompt = (req.body?.prompt || "").trim() || "";
 
     let enhanced;
+    let usedModel = model;
     if (HF_INFERENCE_MODE === "local") {
       enhanced = await callLocalInference({
         imageBuffer: req.file.buffer,
@@ -152,11 +166,27 @@ app.post("/api/hf/enhance", upload.single("image"), async (req, res) => {
         prompt,
       });
     } else if (HF_INFERENCE_MODE === "remote") {
-      enhanced = await callHfInference({
-        imageBuffer: req.file.buffer,
-        model,
-        apiKey: HF_API_KEY,
-      });
+      try {
+        enhanced = await callHfInference({
+          imageBuffer: req.file.buffer,
+          model,
+          apiKey: HF_API_KEY,
+        });
+      } catch (remoteError) {
+        if (
+          model !== HF_MODEL_FALLBACK &&
+          shouldTryFallbackModel(remoteError?.message)
+        ) {
+          enhanced = await callHfInference({
+            imageBuffer: req.file.buffer,
+            model: HF_MODEL_FALLBACK,
+            apiKey: HF_API_KEY,
+          });
+          usedModel = HF_MODEL_FALLBACK;
+        } else {
+          throw remoteError;
+        }
+      }
     } else {
       try {
         enhanced = await callLocalInference({
@@ -165,14 +195,31 @@ app.post("/api/hf/enhance", upload.single("image"), async (req, res) => {
           prompt,
         });
       } catch (_localError) {
-        enhanced = await callHfInference({
-          imageBuffer: req.file.buffer,
-          model,
-          apiKey: HF_API_KEY,
-        });
+        try {
+          enhanced = await callHfInference({
+            imageBuffer: req.file.buffer,
+            model,
+            apiKey: HF_API_KEY,
+          });
+        } catch (remoteError) {
+          if (
+            model !== HF_MODEL_FALLBACK &&
+            shouldTryFallbackModel(remoteError?.message)
+          ) {
+            enhanced = await callHfInference({
+              imageBuffer: req.file.buffer,
+              model: HF_MODEL_FALLBACK,
+              apiKey: HF_API_KEY,
+            });
+            usedModel = HF_MODEL_FALLBACK;
+          } else {
+            throw remoteError;
+          }
+        }
       }
     }
 
+    res.setHeader("X-HF-Model-Used", usedModel);
     res.setHeader("Content-Type", enhanced.contentType);
     return res.status(200).send(enhanced.data);
   } catch (error) {

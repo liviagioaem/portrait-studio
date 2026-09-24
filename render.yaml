@@ -12,5 +12,7 @@ services:
         value: remote
       - key: HF_MODEL
         value: black-forest-labs/FLUX.2-klein-base-9b-fp8
+      - key: HF_MODEL_FALLBACK
+        value: caidas/swin2SR-classical-sr-x2-64
       - key: HF_API_KEY
         sync: false
