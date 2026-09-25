@@ -29,6 +29,7 @@
     body {
       margin: 0;
       font-family: Inter, "Segoe UI", "Trebuchet MS", sans-serif;
+      font-size: 0.500rem;
       color: var(--text);
       background:
         radial-gradient(1200px 400px at 0% -10%, rgba(71, 120, 230, 0.08), transparent 65%),
@@ -43,7 +44,7 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+      grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
       gap: 20px;
       align-items: start;
     }
@@ -65,11 +66,12 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       padding: 20px;
+      order: 1;
     }
 
     .hero-main h1 {
       margin: 0;
-      font-size: clamp(1.7rem, 2.2vw, 2rem);
+      font-size: clamp(1.45rem, 2vw, 1.75rem);
       font-weight: 600;
       letter-spacing: -0.01em;
       line-height: 1.2;
@@ -82,21 +84,24 @@
     }
 
     .spec {
-      font-size: 0.95rem;
+      font-size: 0.78rem;
+      line-height: 1.3;
       font-weight: 500;
       color: #445069;
     }
 
     .subhead {
-      font-size: 0.93rem;
+      font-size: 0.78rem;
+      line-height: 1.3;
       max-width: 46ch;
     }
 
     .hero-side {
       padding: 0;
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
+      order: 2;
     }
 
     .kpi {
@@ -104,23 +109,25 @@
       border-radius: var(--radius-md);
       background: var(--card);
       padding: 14px;
-      min-height: 98px;
-      display: grid;
-      align-content: start;
+      min-height: 82px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
       gap: 6px;
     }
 
     .kpi strong {
       display: block;
       color: var(--text);
-      font-size: clamp(1.4rem, 2.2vw, 1.8rem);
+      font-size: clamp(1.2rem, 1.9vw, 1.55rem);
       font-weight: 700;
       line-height: 1;
       letter-spacing: -0.02em;
+      margin-top: auto;
     }
 
     .kpi-title {
-      font-size: 0.72rem;
+      font-size: 0.64rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #7d889b;
@@ -128,19 +135,17 @@
     }
 
     .kpi-desc {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-      line-height: 1.35;
+      display: none;
     }
 
     .drop {
       display: grid;
       place-items: center;
-      gap: 6px;
-      margin-top: 20px;
+      gap: 4px;
+      margin-top: 14px;
       border: 1px dashed #cfd8e6;
       border-radius: var(--radius-lg);
-      padding: 26px 20px;
+      padding: 18px 14px;
       text-align: center;
       background: #fff;
       transition: border-color var(--transition-fast) ease, background-color var(--transition-fast) ease, transform var(--transition-fast) ease;
@@ -159,30 +164,30 @@
     }
 
     .upload-icon {
-      width: 40px;
-      height: 40px;
+      width: 34px;
+      height: 34px;
       border-radius: 999px;
       background: #eef3ff;
       color: var(--primary);
       display: grid;
       place-items: center;
-      font-size: 1.1rem;
+      font-size: 0.95rem;
       font-weight: 700;
       border: 1px solid #d6e3ff;
     }
 
     .drop-title {
-      font-size: 1.05rem;
+      font-size: 0.86rem;
       color: var(--text);
       font-weight: 600;
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     .drop-help {
       max-width: 42ch;
-      font-size: 0.9rem;
+      font-size: 0.76rem;
       color: #66758d;
-      line-height: 1.45;
+      line-height: 1.3;
     }
 
     .action-row {
@@ -193,16 +198,66 @@
       align-items: center;
     }
 
+    .hero-main .action-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      align-items: center;
+    }
+
+    .hero-main .action-row>button {
+      width: 100%;
+      min-width: 0;
+      margin: 0;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    .hero-main #startBtn,
+    .hero-main #stopBtn {
+      order: 1;
+      grid-column: 1 / -1;
+    }
+
+    .hero-main #zipBtn {
+      order: 2;
+      grid-column: 1;
+    }
+
+    .hero-main #clearBtn {
+      order: 2;
+      grid-column: 2;
+      justify-self: stretch;
+      width: 100%;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      border: 1px solid #d2dae7;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      text-decoration: none;
+      min-height: 40px;
+      padding: 0 14px;
+    }
+
+    .hero-main #clearBtn:hover:not(:disabled) {
+      border-color: #b8c5da;
+      background: #f9fbff;
+      color: var(--text);
+    }
+
     button {
       border: 1px solid transparent;
       border-radius: 10px;
-      padding: 0 16px;
+      padding: 0 14px;
       font-weight: 600;
       cursor: pointer;
       transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease, border-color var(--transition-fast) ease, transform var(--transition-fast) ease;
       color: var(--text);
       background: transparent;
-      min-height: 44px;
+      min-height: 40px;
     }
 
     button:hover:not(:disabled) {
@@ -238,15 +293,24 @@
       background: #f9fbff;
     }
 
-    #stopBtn:disabled,
     #notice:empty {
       display: none;
     }
 
     #stopBtn {
+      display: none;
+      grid-column: 1 / -1;
       background: #fff;
       border-color: #f2c8c8;
       color: #a63e3e;
+    }
+
+    .hero-main.processing #startBtn {
+      display: none;
+    }
+
+    .hero-main.processing #stopBtn {
+      display: block;
     }
 
     #clearBtn {
@@ -270,23 +334,47 @@
       margin-top: 0;
       padding: 0;
       min-width: 0;
+      max-height: none;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 6px;
+    }
+
+    .gallery-wrap::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .gallery-wrap::-webkit-scrollbar-thumb {
+      background: #c7d2e4;
+      border-radius: 999px;
+      border: 2px solid #f7f8fa;
+    }
+
+    .gallery-wrap::-webkit-scrollbar-track {
+      background: transparent;
     }
 
     #notice {
       margin: 0 0 12px;
-      border: 1px solid #dbe3f0;
-      background: #f8fbff;
+      border: none;
+      background: transparent;
       color: #39506f;
-      border-radius: 16px;
-      padding: 14px 18px;
-      min-height: 20px;
-      font-size: 1rem;
+      border-radius: 0;
+      padding: 0;
+      min-height: 0;
+      font-size: 0.82rem;
     }
 
     .gallery {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
+      gap: 12px;
+    }
+
+    @media (max-width: 1400px) {
+      .workspace {
+        grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+      }
     }
 
     @media (max-width: 1280px) {
@@ -299,9 +387,9 @@
       border: 1px solid #d7dde8;
       border-radius: 12px;
       background: var(--card);
-      padding: 14px;
+      padding: 10px;
       display: grid;
-      gap: 12px;
+      gap: 8px;
       box-shadow: 0 8px 20px rgba(23, 32, 51, 0.06);
       transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
     }
@@ -315,14 +403,14 @@
       position: relative;
       border: 1px solid #cfd7e5;
       border-radius: 8px;
-      padding: 8px;
+      padding: 6px;
       background: #f6f8fc;
     }
 
     .card .result {
       width: 100%;
       height: auto;
-      aspect-ratio: 16 / 10;
+      aspect-ratio: 16 / 8.4;
       object-fit: contain;
       background: #e3e8f2;
       border-radius: 4px;
@@ -332,7 +420,7 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: calc(min(calc((100% - 16px) * var(--fit-w, 1)), calc((100% - 16px) * var(--fit-h, 1))) - 8px);
+      width: calc(min(calc((100% - 12px) * var(--fit-w, 1)), calc((100% - 12px) * var(--fit-h, 1))) - 6px);
       aspect-ratio: 1;
       transform: translate(-50%, -50%);
       border: 2px solid rgba(130, 103, 255, 0.35);
@@ -345,7 +433,7 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: calc(min(calc((100% - 16px) * var(--fit-w, 1)), calc((100% - 16px) * var(--fit-h, 1))) - 8px);
+      width: calc(min(calc((100% - 12px) * var(--fit-w, 1)), calc((100% - 12px) * var(--fit-h, 1))) - 6px);
       aspect-ratio: 1;
       transform: translate(-50%, -50%);
       border-radius: 50%;
@@ -370,6 +458,27 @@
       font-size: 0.95rem;
       line-height: 1;
       z-index: 2;
+    }
+
+    .status-badge.pending {
+      color: transparent;
+      background: #fff;
+      border: 1px solid #d2d9e8;
+    }
+
+    .status-badge.pending::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #b9c6dd;
+      display: block;
+    }
+
+    .status-badge.working::before {
+      border-color: #cfe0ff;
+      border-top-color: #3f6fd6;
+      animation: statusSpin 0.9s linear infinite;
     }
 
     .status-badge.done {
@@ -405,7 +514,8 @@
       border: 1px solid #d5dbe8;
       border-radius: 4px;
       background: #fff;
-      padding: 4px 8px;
+      padding: 1px 8px;
+      min-height: 34px;
     }
 
     .export-name-fields {
@@ -425,10 +535,11 @@
       min-width: 0;
       width: 100%;
       font: inherit;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: #172033;
       background: transparent;
-      padding: 4px 0;
+      padding: 0;
+      line-height: 1.2;
     }
 
     .photo-actions {
@@ -442,13 +553,13 @@
 
     .photo-actions>button {
       flex: 1 1 0;
-      min-height: 42px;
+      min-height: 40px;
       padding: 0 14px;
       border-radius: 8px;
       border: 1px solid #d5dbe8;
       background: #fff;
       color: #3b4a63;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 600;
     }
 
@@ -458,13 +569,13 @@
     }
 
     .action-button {
-      min-height: 42px;
+      min-height: 40px;
       padding: 0 14px;
       border-radius: 8px;
       border: 1px solid #d5dbe8;
       background: #fff;
       color: #3b4a63;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 600;
     }
 
@@ -474,13 +585,13 @@
     }
 
     .photo-actions>.remove-action {
-      min-height: 42px;
+      min-height: 40px;
       padding: 0 14px;
       border-radius: 8px;
       border: 1px solid #f2c8cf;
       background: #fff1f3;
       color: #d33545;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 600;
     }
 
@@ -494,8 +605,9 @@
     }
 
     .privacy {
-      margin-top: 28px;
-      padding-top: 14px;
+      order: 3;
+      margin-top: 8px;
+      padding-top: 8px;
       border-top: 1px solid var(--line);
       display: flex;
       align-items: center;
@@ -560,7 +672,7 @@
 
     .tiny {
       overflow-wrap: anywhere;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       color: var(--text-soft);
       line-height: 1.35;
     }
@@ -593,15 +705,28 @@
       }
     }
 
+    @keyframes statusSpin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .dialog {
-      max-height: calc(100dvh - 28px);
-      overflow: auto;
-      width: min(960px, 96vw);
+      max-height: calc(100dvh - 20px);
+      overflow: hidden;
+      width: min(1080px, 97vw);
       background: #fefefe;
       border-radius: 14px;
       border: 1px solid var(--line);
       box-shadow: 0 20px 45px rgba(0, 0, 0, 0.16);
-      padding: 14px;
+      padding: 12px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      gap: 10px;
     }
 
     .dialog-head {
@@ -609,23 +734,56 @@
       align-items: baseline;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 8px;
+      margin-bottom: 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #modalTitle {
+      font-size: clamp(1rem, 1.4vw, 1.2rem);
+      font-weight: 700;
+      color: #1f2a3b;
+      letter-spacing: -0.01em;
+    }
+
+    .stage-wrap {
+      min-height: 0;
+      overflow: hidden;
+      border-radius: 12px;
+      background: #f7f9fc;
+      border: 1px solid #e2e8f3;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
     }
 
     .stage {
-      width: min(100%, 86vh);
+      width: min(100%, 700px);
       height: auto;
-      margin: auto;
+      margin: 0 auto;
       background: #f0f4f7;
       border: 1px solid var(--line);
       border-radius: 10px;
       display: block;
+      max-height: min(68dvh, 860px);
     }
 
     .hint {
-      margin: 8px 0;
+      margin: 0;
       color: var(--text-soft);
-      font-size: 0.9rem;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .dialog .action-row {
+      margin-top: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
     }
 
     .empty-state {
@@ -673,6 +831,12 @@
         grid-template-columns: 1fr;
       }
 
+      .gallery-wrap {
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+      }
+
       .hero-side {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
@@ -702,12 +866,48 @@
         grid-template-columns: 1fr;
       }
 
+      .export-name-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .name-divider {
+        display: none;
+      }
+
       .action-row {
         gap: 10px;
       }
 
+      .hero-main .action-row {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-main #startBtn,
+      .hero-main #clearBtn {
+        grid-column: auto;
+      }
+
       #clearBtn {
         margin-left: 0;
+      }
+
+      .dialog {
+        width: min(96vw, 760px);
+        padding: 10px;
+      }
+
+      .stage-wrap {
+        padding: 8px;
+      }
+
+      .stage {
+        width: 100%;
+        max-height: 58dvh;
+      }
+
+      .dialog .action-row {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -754,7 +954,7 @@
     }
 
     button {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       min-height: 36px;
     }
@@ -805,30 +1005,33 @@
           </label>
 
           <div class="action-row">
-            <button id="startBtn" class="btn-brand" disabled>Processar todas</button>
-            <button id="zipBtn" class="btn-alt" disabled>Baixar aprovadas (0 PNGs)</button>
-            <button id="stopBtn" disabled>Cancelar lote</button>
-            <button id="clearBtn" disabled>Limpar lote</button>
+            <button id="startBtn" class="btn-brand" disabled>Processar Fotos</button>
+            <button id="zipBtn" class="btn-alt" disabled>Baixar Fotos</button>
+            <button id="stopBtn" disabled>Cancelar Processamento</button>
+            <button id="clearBtn" disabled>Limpar fotos</button>
           </div>
         </div>
 
         <aside class="panel hero-side">
           <div class="kpi" aria-live="polite">
-            <span class="kpi-title">Total de fotos</span>
+            <span class="kpi-title">Total de Fotos</span>
             <strong id="kpiTotal">0</strong>
             <span class="kpi-desc">Fotos adicionadas</span>
           </div>
           <div class="kpi" aria-live="polite">
-            <span class="kpi-title">Aprovadas</span>
+            <span class="kpi-title">Fotos Aprovadas</span>
             <strong id="kpiDone">0</strong>
             <span class="kpi-desc">Prontas para baixar</span>
           </div>
           <div class="kpi" aria-live="polite">
-            <span class="kpi-title">Pendentes</span>
+            <span class="kpi-title">Fotos Pendentes</span>
             <strong id="kpiPending">0</strong>
             <span class="kpi-desc">Aguardando processamento ou revisão</span>
           </div>
         </aside>
+
+        <p class="tiny privacy" title="Os modelos são baixados pela internet. O uso offline depende do cache do navegador."><span aria-hidden="true">🔒</span>Suas fotos são processadas localmente e permanecem neste dispositivo.</p>
+
       </section>
 
       <section class="panel gallery-wrap">
@@ -836,7 +1039,6 @@
         <div class="gallery" id="gallery"></div>
       </section>
     </div>
-    <p class="tiny privacy" title="Os modelos são baixados pela internet. O uso offline depende do cache do navegador."><span aria-hidden="true">🔒</span>Suas fotos são processadas localmente e permanecem neste dispositivo.</p>
   </main>
 
   <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -845,8 +1047,9 @@
         <strong id="modalTitle">Alinhamento assistido</strong>
         <button id="cancelModal">Fechar</button>
       </div>
-      <canvas id="stage" class="stage" width="1000" height="700"></canvas>
-      <div id="alignmentPreview" class="previews" style="max-width:360px;margin:12px auto" aria-label="Prévia do resultado"></div>
+      <div class="stage-wrap">
+        <canvas id="stage" class="stage" width="900" height="1100"></canvas>
+      </div>
       <p class="hint" id="hint">Clique no olho esquerdo da pessoa e depois no olho direito.</p>
       <div class="action-row">
         <button id="undoPoint">Desfazer ponto</button>
@@ -888,7 +1091,27 @@
     };
 
     const stageCtx = els.stage.getContext("2d");
-    let previewURLs = [];
+
+    function syncGalleryHeightToKpis() {
+      const galleryWrap = document.querySelector(".gallery-wrap");
+      const privacy = document.querySelector(".privacy");
+      const heroSide = document.querySelector(".hero-side");
+      if (!galleryWrap || !heroSide) return;
+
+      if (window.innerWidth <= 1100) {
+        galleryWrap.style.maxHeight = "";
+        galleryWrap.style.overflowY = "visible";
+        return;
+      }
+
+      const galleryTop = galleryWrap.getBoundingClientRect().top;
+      const leftBottom = privacy
+        ? privacy.getBoundingClientRect().bottom
+        : heroSide.getBoundingClientRect().bottom;
+      const targetHeight = Math.max(180, Math.floor(leftBottom - galleryTop));
+      galleryWrap.style.maxHeight = `${targetHeight}px`;
+      galleryWrap.style.overflowY = "auto";
+    }
 
     function selectedFormats() {
       return ["quadrada", "redonda"];
@@ -925,41 +1148,22 @@
       return item.outputs.find((output) => output.shape === "quadrada") || item.outputs[0];
     }
 
+    function isReadyToDownload(item) {
+      const output = preferredOutput(item);
+      return item.status === "done" && !!output?.blob;
+    }
+
     function exportableItems() {
       return state.items.filter(item => item.status === "done" && item.review !== "rejected" && item.outputs);
     }
 
     function clearAlignmentPreview() {
-      previewURLs.forEach(url => URL.revokeObjectURL(url));
-      previewURLs = [];
-      document.getElementById("alignmentPreview").replaceChildren();
+      // Modal now uses only one main view (canvas), no secondary preview area.
     }
 
     async function updateAlignmentPreview() {
-      clearAlignmentPreview();
-      if (state.points.length !== 2 || state.busy) return;
-      state.busy = true;
-      els.confirmPoints.disabled = els.undoPoint.disabled = els.cancelModal.disabled = true;
-      render();
-      try {
-        const outputs = await processCurrentItem(true);
-        for (const output of outputs) {
-          const image = document.createElement("img");
-          image.className = "result";
-          image.src = URL.createObjectURL(output.blob);
-          previewURLs.push(image.src);
-          image.alt = `Prévia ${output.shape}`;
-          document.getElementById("alignmentPreview").appendChild(image);
-        }
-        els.hint.textContent = "Prévia atualizada. Confirme para substituir o resultado.";
-      } catch (error) {
-        els.hint.textContent = error.message;
-      } finally {
-        state.busy = false;
-        els.confirmPoints.disabled = state.points.length !== 2;
-        els.undoPoint.disabled = els.cancelModal.disabled = false;
-        render();
-      }
+      if (state.points.length !== 2) return;
+      els.hint.textContent = "Pontos capturados. Clique em Confirmar e gerar.";
     }
     const OUTPUT_SIZE = 1181;
     const CIRCLE_MM = 2.29 * 25.4;
@@ -1478,6 +1682,7 @@
       const total = state.items.length;
       const done = state.items.filter((x) => x.status === "done").length;
       const pending = state.items.filter((x) => x.status !== "done").length;
+      els.startBtn.closest(".hero-main")?.classList.toggle("processing", state.busy);
       els.kpiTotal.textContent = String(total);
       els.kpiDone.textContent = String(done);
       els.kpiPending.textContent = String(pending);
@@ -1486,7 +1691,7 @@
       els.zipBtn.disabled = exportCount === 0 || state.busy || state.importing;
       els.fileInput.disabled = state.busy || state.importing;
       els.clearBtn.disabled = !total || state.busy || state.importing || state.activeIndex >= 0;
-      els.zipBtn.textContent = `Baixar aprovadas (${exportCount} PNGs)`;
+      els.zipBtn.textContent = "Baixar Fotos";
     }
 
     function statusLabel(status) {
@@ -1520,7 +1725,7 @@
         image.title = preview.shape;
         visual.appendChild(image);
 
-        const containerAspect = 16 / 10;
+        const containerAspect = 16 / 8.4;
         let previewAspect = item.img.naturalWidth / item.img.naturalHeight;
         if (preview.shape === "quadrada" || preview.shape === "redonda") previewAspect = 1;
         const fitWidth = Math.min(1, previewAspect / containerAspect);
@@ -1538,8 +1743,12 @@
 
         const statusBadge = document.createElement("div");
         statusBadge.className = "status-badge";
-        statusBadge.textContent = "✓";
-        statusBadge.title = statusLabel(item.status);
+        const readyToDownload = isReadyToDownload(item);
+        const isWorking = item.status === "working";
+        statusBadge.classList.add(readyToDownload ? "done" : "pending");
+        if (isWorking) statusBadge.classList.add("working");
+        statusBadge.textContent = readyToDownload ? "✓" : "";
+        statusBadge.title = readyToDownload ? "Pronta para baixar" : statusLabel(item.status);
         visual.appendChild(statusBadge);
 
         const meta = document.createElement("div");
@@ -1607,7 +1816,7 @@
 
         const downloadSingle = document.createElement("button");
         downloadSingle.textContent = "Baixar foto";
-        downloadSingle.disabled = state.busy || state.importing || state.activeIndex >= 0 || item.status !== "done" || !item.outputs?.length;
+        downloadSingle.disabled = state.busy || state.importing || state.activeIndex >= 0 || !isReadyToDownload(item);
         downloadSingle.addEventListener("click", () => {
           const output = preferredOutput(item);
           if (!output) return;
@@ -1623,6 +1832,7 @@
         els.gallery.appendChild(card);
       });
       updateKpis();
+      syncGalleryHeightToKpis();
     }
 
     function openAlignModal(index) {
@@ -1665,6 +1875,24 @@
     }
 
     function drawStageImage(img) {
+      const wrap = els.stage.closest(".stage-wrap");
+      const wrapWidth = wrap ? wrap.clientWidth : 760;
+      const maxCssWidth = Math.max(360, Math.min(760, wrapWidth - 28));
+      const maxCssHeight = Math.max(420, Math.floor(window.innerHeight * 0.64));
+      const ratio = (img.naturalWidth || 1) / (img.naturalHeight || 1);
+
+      let cssWidth = maxCssWidth;
+      let cssHeight = Math.round(cssWidth / ratio);
+      if (cssHeight > maxCssHeight) {
+        cssHeight = maxCssHeight;
+        cssWidth = Math.round(cssHeight * ratio);
+      }
+
+      els.stage.style.width = `${cssWidth}px`;
+      els.stage.style.height = `${cssHeight}px`;
+      els.stage.width = cssWidth;
+      els.stage.height = cssHeight;
+
       const cw = els.stage.width;
       const ch = els.stage.height;
       stageCtx.clearRect(0, 0, cw, ch);
@@ -1964,8 +2192,9 @@
         state.busy = false;
         state.activeIndex = -1;
         state.points = [];
+        els.stopBtn.textContent = "Cancelar Processamento";
         els.stopBtn.disabled = true;
-        els.startBtn.textContent = "Processar todas";
+        els.startBtn.textContent = "Processar Fotos";
         els.notice.textContent = modelFailure ? modelFailure.message : state.cancelRequested
           ? "Lote cancelado. As fotos concluídas foram preservadas."
           : `${state.items.filter((item) => item.status === "done").length} fotos prontas; ${state.items.filter((item) => item.status !== "done").length} pendentes.`;
@@ -2134,6 +2363,7 @@
     function bindEvents() {
       els.stopBtn.addEventListener("click", () => {
         state.cancelRequested = true;
+        els.stopBtn.textContent = "Cancelando...";
         els.stopBtn.disabled = true;
         els.notice.textContent = "Cancelando após a foto atual...";
       });
@@ -2256,10 +2486,18 @@
           updateAlignmentPreview();
         }
       });
+
+      window.addEventListener("resize", syncGalleryHeightToKpis);
+      window.addEventListener("resize", () => {
+        if (!els.modal.classList.contains("open") || state.activeIndex < 0) return;
+        const item = state.items[state.activeIndex];
+        if (item) drawStageImage(item.img);
+      });
     }
 
     bindEvents();
     render();
+    syncGalleryHeightToKpis();
   </script>
 </body>
 
