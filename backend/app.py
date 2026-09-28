@@ -4,7 +4,7 @@ from threading import Lock
 
 import numpy as np
 import torch
-from diffusers import AutoPipelineForInpainting, FluxImg2ImgPipeline
+from diffusers import AutoPipelineForImage2Image, AutoPipelineForInpainting
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -30,7 +30,7 @@ _pipeline = None
 _inpaint_pipeline = None
 
 
-def _get_pipeline() -> FluxImg2ImgPipeline:
+def _get_pipeline():
     global _pipeline
     if _pipeline is not None:
         return _pipeline
@@ -39,29 +39,29 @@ def _get_pipeline() -> FluxImg2ImgPipeline:
         if _pipeline is not None:
             return _pipeline
 
-        model_id = os.getenv("FLUX_MODEL_ID", "black-forest-labs/FLUX.2-klein-base-9b-fp8")
+        model_id = os.getenv("IMG2IMG_MODEL_ID", "runwayml/stable-diffusion-v1-5")
         token = os.getenv("HF_TOKEN") or None
         device = os.getenv("DEVICE", "cuda").lower()
 
         if device == "cuda" and not torch.cuda.is_available():
             raise RuntimeError("CUDA nao disponivel. Configure DEVICE=cpu (lento) ou use GPU NVIDIA.")
 
-        if device == "cuda":
-            dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
-        else:
-            dtype = torch.float32
+        dtype = torch.float16 if device == "cuda" else torch.float32
+        load_kwargs = {"torch_dtype": dtype, "token": token, "local_files_only": False}
 
-        pipe = FluxImg2ImgPipeline.from_pretrained(
-            model_id,
-            torch_dtype=dtype,
-            token=token,
-            local_files_only=False,
-        )
+        try:
+            pipe = AutoPipelineForImage2Image.from_pretrained(
+                model_id,
+                variant="fp16" if dtype == torch.float16 else None,
+                **load_kwargs,
+            )
+        except (OSError, ValueError):
+            pipe = AutoPipelineForImage2Image.from_pretrained(model_id, **load_kwargs)
 
-        if device == "cuda":
-            pipe = pipe.to("cuda")
+        if device == "cuda" and os.getenv("LOW_VRAM", "0") == "1":
+            pipe.enable_model_cpu_offload()
         else:
-            pipe = pipe.to("cpu")
+            pipe = pipe.to(device)
 
         _pipeline = pipe
         return _pipeline
@@ -181,6 +181,10 @@ def _working_size(size: tuple[int, int], target: int) -> tuple[int, int]:
     return max(64, round(width * scale / 8) * 8), max(64, round(height * scale / 8) * 8)
 
 
+def _fit_image_for_model(image: Image.Image, target: int) -> Image.Image:
+    return image.resize(_working_size(image.size, target), Image.Resampling.LANCZOS)
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
@@ -189,10 +193,10 @@ def health() -> dict:
 @app.post("/enhance")
 async def enhance(
     file: UploadFile = File(...),
-    prompt: str = Form("high quality portrait, realistic skin detail, balanced lighting, natural colors"),
-    negative_prompt: str = Form("artifacts, blur, extra fingers, distorted face, oversharpen, watermark"),
-    strength: float = Form(0.35),
-    guidance_scale: float = Form(3.5),
+    prompt: str = Form("professional portrait photo, natural skin texture, balanced studio lighting, realistic details"),
+    negative_prompt: str = Form("artifacts, blur, deformed face, extra limbs, text, watermark, cartoon"),
+    strength: float = Form(0.45),
+    guidance_scale: float = Form(7.0),
     num_inference_steps: int = Form(30),
     seed: int = Form(-1),
 ) -> Response:
@@ -211,6 +215,9 @@ async def enhance(
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Nao foi possivel ler a imagem: {exc}") from exc
 
+    work_resolution = int(os.getenv("IMG2IMG_RESOLUTION", "768"))
+    source_for_model = _fit_image_for_model(source, work_resolution)
+
     try:
         pipe = _get_pipeline()
     except Exception as exc:
@@ -225,13 +232,13 @@ async def enhance(
         result = pipe(
             prompt=prompt,
             negative_prompt=negative_prompt,
-            image=source,
+            image=source_for_model,
             strength=strength,
             guidance_scale=guidance_scale,
             num_inference_steps=num_inference_steps,
             generator=generator,
         )
-        output = result.images[0]
+        output = result.images[0].resize(source.size, Image.Resampling.LANCZOS)
     except RuntimeError as exc:
         # Erro comum: OOM em GPU
         raise HTTPException(status_code=500, detail=f"Erro de inferencia: {exc}") from exc

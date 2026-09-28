@@ -19,10 +19,10 @@ Ferramenta web local para preparar retratos com fundo transparente em formato pa
 - Execução local no browser
 - Modelos carregados por CDN (MediaPipe)
 
-## Integrando FLUX.2 (Hugging Face)
+## Integrando Stable Diffusion (Hugging Face)
 
-O modelo `black-forest-labs/FLUX.2-klein-base-9b-fp8` nao deve rodar direto no navegador deste projeto por custo de GPU/memoria.
-O caminho recomendado e manter o frontend atual e adicionar uma API local em Python para inferencia.
+Stable Diffusion nao deve rodar direto no navegador deste projeto por custo de GPU/memoria.
+O caminho recomendado e manter o frontend atual e adicionar uma API Python para inferencia.
 
 ### 1) Backend local (ja incluído em `backend/`)
 
@@ -43,14 +43,15 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 3) Configurar token e modelo
+### 3) Configurar token e modelos
 
 Copie `backend/.env.example` para `.env` e ajuste se necessario.
 
-- `HF_TOKEN`: token do Hugging Face (quando o modelo exigir autorizacao)
-- `FLUX_MODEL_ID`: por padrao `black-forest-labs/FLUX.2-klein-base-9b-fp8`
-- `INPAINT_MODEL_ID`: por padrao `diffusers/stable-diffusion-xl-1.0-inpainting-0.1` (~7 GB de VRAM). Para GPU menor use `stable-diffusion-v1-5/stable-diffusion-inpainting`
-- `INPAINT_RESOLUTION`: lado maior usado na geracao; `1024` para SDXL, `512` para SD 1.5
+- `HF_TOKEN`: token do Hugging Face (somente se o modelo exigir)
+- `IMG2IMG_MODEL_ID`: por padrao `runwayml/stable-diffusion-v1-5` (gratuito/open-source)
+- `IMG2IMG_RESOLUTION`: recomendado `768` (CPU mais rapido com `512`)
+- `INPAINT_MODEL_ID`: por padrao `runwayml/stable-diffusion-inpainting`
+- `INPAINT_RESOLUTION`: recomendado `512` para comecar
 - `LOW_VRAM`: `1` para descarregar partes do modelo na CPU (mais lento, usa menos VRAM)
 - `DEVICE`: `cuda` (recomendado) ou `cpu` (muito lento)
 
@@ -68,7 +69,7 @@ curl http://localhost:8000/health
 
 ### 5) Chamar o endpoint no frontend
 
-Exemplo minimo (JavaScript) para enviar uma imagem ao FLUX e receber PNG processado:
+Exemplo minimo (JavaScript) para enviar uma imagem ao Stable Diffusion image-to-image e receber PNG processado:
 
 ```javascript
 async function enhanceWithFlux(file) {
@@ -90,7 +91,7 @@ async function enhanceWithFlux(file) {
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Falha no FLUX: ${res.status} ${errText}`);
+    throw new Error(`Falha no image-to-image: ${res.status} ${errText}`);
   }
 
   const blob = await res.blob();
@@ -165,6 +166,115 @@ Se o backend estiver offline, o app continua normalmente sem interromper o lote.
 
 O endpoint antigo `POST /auto-repair` continua disponivel, mas o frontend nao o usa mais.
 
+## Deploy no Render (passo a passo)
+
+### 1) Subir o repositorio no GitHub
+
+Garanta que a pasta `backend/` esteja versionada com `app.py` e `requirements.txt`.
+
+### 2) Criar o servico Web Service no Render
+
+No painel do Render:
+
+1. New + > Web Service
+2. Conecte seu repositorio
+3. Root Directory: `backend`
+4. Runtime: `Python 3`
+
+### 3) Definir Build e Start
+
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `uvicorn app:app --host 0.0.0.0 --port $PORT`
+
+### 4) Configurar variaveis de ambiente
+
+Use estes valores iniciais:
+
+- `DEVICE=cpu` (primeiro deploy para validar; depois troque para `cuda` se plano suportar GPU)
+- `IMG2IMG_MODEL_ID=runwayml/stable-diffusion-v1-5`
+- `IMG2IMG_RESOLUTION=512` (CPU mais estavel)
+- `INPAINT_MODEL_ID=runwayml/stable-diffusion-inpainting`
+- `INPAINT_RESOLUTION=512`
+- `LOW_VRAM=1`
+- `HF_HOME=/opt/render/project/.cache/huggingface`
+- `TRANSFORMERS_CACHE=/opt/render/project/.cache/huggingface`
+- `HF_TOKEN=` (somente se precisar)
+
+### 5) Liberar CORS e testar
+
+Depois de deploy, teste:
+
+```bash
+curl https://SUA-API.onrender.com/health
+```
+
+Se responder `{"ok": true}`, API esta pronta.
+
+### 6) Apontar frontend para a API do Render
+
+No arquivo `config.js`, troque:
+
+- de: `http://localhost:8000`
+- para: `https://SUA-API.onrender.com`
+
+Alternativa recomendada (ja implementada):
+
+- local: usa `http://localhost:8000`
+- producao: usa `${window.location.origin}/api`
+- override manual: `localStorage.setItem("portrait_api_base", "https://SUA-API.onrender.com")`
+
+### 7) Ajustes de performance
+
+- CPU: mantenha imagens em 512-768 px no lado maior.
+- GPU: pode subir para 768-1024 px e mais passos.
+- Se houver erro de memoria, reduza `IMG2IMG_RESOLUTION`, `INPAINT_RESOLUTION` e `num_inference_steps`.
+
+### 8) Teste rapido do endpoint enhance
+
+Foi adicionado o script `backend/test_enhance.py` para validar a API com uma imagem real.
+
+Exemplo local:
+
+```bash
+cd backend
+python test_enhance.py ./sua-imagem.png --api http://localhost:8000 --out ./resultado.png
+```
+
+Exemplo com API no Render:
+
+```bash
+cd backend
+python test_enhance.py ./sua-imagem.png --api https://SUA-API.onrender.com --out ./resultado.png
+```
+
+## Plano Render (custo x desempenho)
+
+Perfil 1 - Validacao barata (CPU):
+
+- `DEVICE=cpu`
+- `IMG2IMG_RESOLUTION=512`
+- `INPAINT_RESOLUTION=512`
+- `num_inference_steps=20-30`
+- Uso: prova de conceito, baixo volume, latencia maior.
+
+Perfil 2 - Producao inicial (GPU pequena):
+
+- `DEVICE=cuda`
+- `LOW_VRAM=1`
+- `IMG2IMG_RESOLUTION=768`
+- `INPAINT_RESOLUTION=512`
+- `num_inference_steps=24-32`
+- Uso: qualidade boa com custo controlado.
+
+Perfil 3 - Qualidade alta (GPU maior):
+
+- `DEVICE=cuda`
+- `LOW_VRAM=0`
+- `IMG2IMG_RESOLUTION=1024`
+- `INPAINT_RESOLUTION=768-1024`
+- `num_inference_steps=30-40`
+- Uso: melhor qualidade e throughput, custo mais alto.
+
 ## Uso sem backend local (somente abrir e usar)
 
 Para que outras pessoas usem IA sem rodar nada local, publique o backend em um servidor e aponte o frontend para essa URL.
@@ -182,7 +292,7 @@ uvicorn app:app --host 0.0.0.0 --port $PORT
 Variaveis de ambiente no servidor:
 
 - `HF_TOKEN`
-- `FLUX_MODEL_ID`
+- `IMG2IMG_MODEL_ID`
 - `INPAINT_MODEL_ID`
 - `DEVICE` (`cuda` recomendado)
 
@@ -209,7 +319,7 @@ Com isso, o usuario final so abre o app e usa, sem backend local.
 ### Checklist de publicacao (time usando sem setup)
 
 1. Publicar API de IA (backend) em um host com GPU quando possivel.
-2. Configurar variaveis do backend no host: `HF_TOKEN`, `DEVICE`, `INPAINT_MODEL_ID`, `FLUX_MODEL_ID`.
+2. Configurar variaveis do backend no host: `HF_TOKEN`, `DEVICE`, `INPAINT_MODEL_ID`, `IMG2IMG_MODEL_ID`.
 3. Obter a URL final da API publicada (exemplo: `https://portrait-api.seudominio.com`).
 4. Editar `config.js` na raiz do projeto e trocar `window.PORTRAIT_API_BASE` para a URL final.
 5. Publicar frontend estatico (GitHub Pages/Netlify/Vercel).
@@ -218,7 +328,7 @@ Com isso, o usuario final so abre o app e usa, sem backend local.
 
 ### Observacoes importantes
 
-- Este modelo e pesado: use GPU NVIDIA com VRAM alta para desempenho aceitavel.
+- Stable Diffusion tambem e pesado: use GPU NVIDIA para desempenho melhor.
 - Em CPU funciona, mas costuma ser inviavel para lote.
 - Se sua meta principal e melhorar nitidez/upscale fiel ao original, combine este fluxo com um modelo dedicado de super-resolucao.
 
