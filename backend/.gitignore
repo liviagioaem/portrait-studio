@@ -1,0 +1,35 @@
+# Python bytecode/cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment files (secrets)
+.env
+.env.*
+!.env.example
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Hugging Face / model caches
+.cache/
+models/
+
+# Local outputs and temporary artifacts
+*.log
+*.tmp
+*.temp
+*_output.png
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
