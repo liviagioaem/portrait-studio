@@ -190,6 +190,18 @@ def health() -> dict:
     return {"ok": True}
 
 
+@app.get("/")
+def root() -> dict:
+    return {
+        "service": "portrait-studio-api",
+        "ok": True,
+        "health": "/health",
+        "enhance": "/enhance",
+        "inpaint": "/inpaint",
+        "outpaint": "/outpaint",
+    }
+
+
 @app.post("/enhance")
 async def enhance(
     file: UploadFile = File(...),
