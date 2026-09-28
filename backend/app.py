@@ -3,8 +3,6 @@ import os
 from threading import Lock
 
 import numpy as np
-import torch
-from diffusers import AutoPipelineForImage2Image, AutoPipelineForInpainting
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -28,9 +26,28 @@ app.add_middleware(
 _model_lock = Lock()
 _pipeline = None
 _inpaint_pipeline = None
+_torch = None
+_AutoPipelineForImage2Image = None
+_AutoPipelineForInpainting = None
+
+
+def _ensure_ml_imports() -> None:
+    global _torch, _AutoPipelineForImage2Image, _AutoPipelineForInpainting
+    if _torch is not None and _AutoPipelineForImage2Image is not None and _AutoPipelineForInpainting is not None:
+        return
+
+    import torch as _torch_mod
+    from diffusers import AutoPipelineForImage2Image as _img2img_cls
+    from diffusers import AutoPipelineForInpainting as _inpaint_cls
+
+    _torch = _torch_mod
+    _AutoPipelineForImage2Image = _img2img_cls
+    _AutoPipelineForInpainting = _inpaint_cls
 
 
 def _get_pipeline():
+    _ensure_ml_imports()
+
     global _pipeline
     if _pipeline is not None:
         return _pipeline
@@ -43,20 +60,20 @@ def _get_pipeline():
         token = os.getenv("HF_TOKEN") or None
         device = os.getenv("DEVICE", "cuda").lower()
 
-        if device == "cuda" and not torch.cuda.is_available():
+        if device == "cuda" and not _torch.cuda.is_available():
             raise RuntimeError("CUDA nao disponivel. Configure DEVICE=cpu (lento) ou use GPU NVIDIA.")
 
-        dtype = torch.float16 if device == "cuda" else torch.float32
+        dtype = _torch.float16 if device == "cuda" else _torch.float32
         load_kwargs = {"torch_dtype": dtype, "token": token, "local_files_only": False}
 
         try:
-            pipe = AutoPipelineForImage2Image.from_pretrained(
+            pipe = _AutoPipelineForImage2Image.from_pretrained(
                 model_id,
-                variant="fp16" if dtype == torch.float16 else None,
+                variant="fp16" if dtype == _torch.float16 else None,
                 **load_kwargs,
             )
         except (OSError, ValueError):
-            pipe = AutoPipelineForImage2Image.from_pretrained(model_id, **load_kwargs)
+            pipe = _AutoPipelineForImage2Image.from_pretrained(model_id, **load_kwargs)
 
         if device == "cuda" and os.getenv("LOW_VRAM", "0") == "1":
             pipe.enable_model_cpu_offload()
@@ -68,6 +85,8 @@ def _get_pipeline():
 
 
 def _get_inpaint_pipeline():
+    _ensure_ml_imports()
+
     global _inpaint_pipeline
     if _inpaint_pipeline is not None:
         return _inpaint_pipeline
@@ -82,19 +101,19 @@ def _get_inpaint_pipeline():
         token = os.getenv("HF_TOKEN") or None
         device = os.getenv("DEVICE", "cuda").lower()
 
-        if device == "cuda" and not torch.cuda.is_available():
+        if device == "cuda" and not _torch.cuda.is_available():
             raise RuntimeError("CUDA nao disponivel. Configure DEVICE=cpu (lento) ou use GPU NVIDIA.")
 
-        dtype = torch.float16 if device == "cuda" else torch.float32
+        dtype = _torch.float16 if device == "cuda" else _torch.float32
         load_kwargs = {"torch_dtype": dtype, "token": token, "local_files_only": False}
 
         try:
-            pipe = AutoPipelineForInpainting.from_pretrained(
-                model_id, variant="fp16" if dtype == torch.float16 else None, **load_kwargs
+            pipe = _AutoPipelineForInpainting.from_pretrained(
+                model_id, variant="fp16" if dtype == _torch.float16 else None, **load_kwargs
             )
         except (OSError, ValueError):
             # Nem todo repositorio publica pesos na variante fp16.
-            pipe = AutoPipelineForInpainting.from_pretrained(model_id, **load_kwargs)
+            pipe = _AutoPipelineForInpainting.from_pretrained(model_id, **load_kwargs)
 
         if device == "cuda" and os.getenv("LOW_VRAM", "0") == "1":
             pipe.enable_model_cpu_offload()
@@ -237,8 +256,9 @@ async def enhance(
 
     generator = None
     if seed >= 0:
+        _ensure_ml_imports()
         dev = "cuda" if os.getenv("DEVICE", "cuda").lower() == "cuda" else "cpu"
-        generator = torch.Generator(device=dev).manual_seed(seed)
+        generator = _torch.Generator(device=dev).manual_seed(seed)
 
     try:
         result = pipe(
@@ -290,8 +310,9 @@ async def inpaint(
 
     generator = None
     if seed >= 0:
+        _ensure_ml_imports()
         dev = "cuda" if os.getenv("DEVICE", "cuda").lower() == "cuda" else "cpu"
-        generator = torch.Generator(device=dev).manual_seed(seed)
+        generator = _torch.Generator(device=dev).manual_seed(seed)
 
     try:
         result = pipe(
@@ -366,8 +387,9 @@ async def auto_repair(
 
     generator = None
     if seed >= 0:
+        _ensure_ml_imports()
         dev = "cuda" if os.getenv("DEVICE", "cuda").lower() == "cuda" else "cpu"
-        generator = torch.Generator(device=dev).manual_seed(seed)
+        generator = _torch.Generator(device=dev).manual_seed(seed)
 
     try:
         result = pipe(
@@ -440,8 +462,9 @@ async def outpaint(
 
     generator = None
     if seed >= 0:
+        _ensure_ml_imports()
         dev = "cuda" if os.getenv("DEVICE", "cuda").lower() == "cuda" else "cpu"
-        generator = torch.Generator(device=dev).manual_seed(seed)
+        generator = _torch.Generator(device=dev).manual_seed(seed)
 
     try:
         result = pipe(
