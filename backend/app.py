@@ -1,11 +1,12 @@
 import io
 import os
 from threading import Lock
+from pathlib import Path
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 from dotenv import load_dotenv
 
@@ -29,6 +30,8 @@ _inpaint_pipeline = None
 _torch = None
 _AutoPipelineForImage2Image = None
 _AutoPipelineForInpainting = None
+_frontend_dir = Path(__file__).resolve().parent.parent
+_frontend_index = _frontend_dir / "index.html"
 
 
 def _ensure_ml_imports() -> None:
@@ -211,6 +214,9 @@ def health() -> dict:
 
 @app.get("/")
 def root() -> dict:
+    if _frontend_index.exists():
+        return FileResponse(str(_frontend_index))
+
     return {
         "service": "portrait-studio-api",
         "ok": True,
@@ -219,6 +225,14 @@ def root() -> dict:
         "inpaint": "/inpaint",
         "outpaint": "/outpaint",
     }
+
+
+@app.get("/config.js")
+def frontend_config() -> Response:
+    config_path = _frontend_dir / "config.js"
+    if config_path.exists():
+        return FileResponse(str(config_path), media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="config.js nao encontrado")
 
 
 @app.post("/enhance")
