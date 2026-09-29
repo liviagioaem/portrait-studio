@@ -30,18 +30,28 @@ _inpaint_pipeline = None
 _torch = None
 _AutoPipelineForImage2Image = None
 _AutoPipelineForInpainting = None
+_img2img_pipeline_name = None
 _frontend_dir = Path(__file__).resolve().parent.parent
 _frontend_index = _frontend_dir / "index.html"
 
 
 def _ensure_ml_imports() -> None:
-    global _torch, _AutoPipelineForImage2Image, _AutoPipelineForInpainting
+    global _torch, _AutoPipelineForImage2Image, _AutoPipelineForInpainting, _img2img_pipeline_name
     if _torch is not None and _AutoPipelineForImage2Image is not None and _AutoPipelineForInpainting is not None:
         return
 
     import torch as _torch_mod
-    from diffusers import AutoPipelineForImage2Image as _img2img_cls
     from diffusers import AutoPipelineForInpainting as _inpaint_cls
+
+    try:
+        from diffusers import AutoPipelineForImage2Image as _img2img_cls
+
+        _img2img_pipeline_name = "AutoPipelineForImage2Image"
+    except ImportError:
+        # Fallback para ambientes onde AutoPipelineForImage2Image nao esta disponivel.
+        from diffusers import StableDiffusionImg2ImgPipeline as _img2img_cls
+
+        _img2img_pipeline_name = "StableDiffusionImg2ImgPipeline"
 
     _torch = _torch_mod
     _AutoPipelineForImage2Image = _img2img_cls
@@ -75,7 +85,8 @@ def _get_pipeline():
                 variant="fp16" if dtype == _torch.float16 else None,
                 **load_kwargs,
             )
-        except (OSError, ValueError):
+        except (OSError, ValueError, TypeError):
+            # Alguns pipelines/versoes nao aceitam `variant` ou exigem assinatura diferente.
             pipe = _AutoPipelineForImage2Image.from_pretrained(model_id, **load_kwargs)
 
         if device == "cuda" and os.getenv("LOW_VRAM", "0") == "1":
@@ -222,6 +233,17 @@ def _tune_enhance_params(strength: float, guidance_scale: float, num_inference_s
     return strength, guidance_scale, num_inference_steps
 
 
+def _tune_inpaint_params(strength: float, guidance_scale: float, num_inference_steps: int) -> tuple[float, float, int]:
+    # Inpainting costuma ser mais pesado; em CPU aplicamos teto ainda mais conservador.
+    if _is_cpu_mode() and os.getenv("CPU_SAFE_MODE", "1") == "1":
+        cpu_max_steps = int(os.getenv("CPU_MAX_INPAINT_STEPS", os.getenv("CPU_MAX_STEPS", "6")))
+        cpu_max_guidance = float(os.getenv("CPU_MAX_INPAINT_GUIDANCE", "3.0"))
+        strength = min(strength, 0.75)
+        guidance_scale = min(guidance_scale, cpu_max_guidance)
+        num_inference_steps = min(num_inference_steps, cpu_max_steps)
+    return strength, guidance_scale, num_inference_steps
+
+
 def _warmup_models_background() -> None:
     if os.getenv("WARMUP_ON_START", "1") != "1":
         return
@@ -338,22 +360,32 @@ async def inpaint(
     mask: UploadFile = File(...),
     prompt: str = Form("clean natural portrait skin, realistic details, consistent lighting"),
     negative_prompt: str = Form("artifacts, blur, deformed face, text, watermark"),
-    strength: float = Form(0.75),
-    guidance_scale: float = Form(7.5),
-    num_inference_steps: int = Form(30),
+    strength: float = Form(0.6),
+    guidance_scale: float = Form(4.0),
+    num_inference_steps: int = Form(10),
     seed: int = Form(-1),
 ) -> Response:
     if strength < 0.05 or strength > 1.0:
         raise HTTPException(status_code=400, detail="strength deve estar entre 0.05 e 1.0.")
 
-    if num_inference_steps < 10 or num_inference_steps > 100:
-        raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 10 e 100.")
+    if num_inference_steps < 1 or num_inference_steps > 100:
+        raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 1 e 100.")
 
     source = _load_image_from_upload(image, mode="RGB", label="image")
     mask_image = _load_image_from_upload(mask, mode="L", label="mask")
 
+    strength, guidance_scale, num_inference_steps = _tune_inpaint_params(
+        strength, guidance_scale, num_inference_steps
+    )
+
     if source.size != mask_image.size:
         mask_image = mask_image.resize(source.size)
+
+    default_resolution = "256" if _is_cpu_mode() else "512"
+    inpaint_resolution = int(os.getenv("INPAINT_RESOLUTION", default_resolution))
+    work_size = _working_size(source.size, inpaint_resolution)
+    source_work = source.resize(work_size, Image.Resampling.LANCZOS)
+    mask_work = mask_image.resize(work_size, Image.Resampling.BILINEAR)
 
     try:
         pipe = _get_inpaint_pipeline()
@@ -370,14 +402,14 @@ async def inpaint(
         result = pipe(
             prompt=prompt,
             negative_prompt=negative_prompt,
-            image=source,
-            mask_image=mask_image,
+            image=source_work,
+            mask_image=mask_work,
             strength=strength,
             guidance_scale=guidance_scale,
             num_inference_steps=num_inference_steps,
             generator=generator,
         )
-        output = result.images[0]
+        output = result.images[0].resize(source.size, Image.Resampling.LANCZOS)
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=f"Erro de inferencia no inpainting: {exc}") from exc
 
@@ -399,8 +431,8 @@ async def auto_repair(
     if strength < 0.05 or strength > 1.0:
         raise HTTPException(status_code=400, detail="strength deve estar entre 0.05 e 1.0.")
 
-    if num_inference_steps < 10 or num_inference_steps > 100:
-        raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 10 e 100.")
+    if num_inference_steps < 1 or num_inference_steps > 100:
+        raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 1 e 100.")
 
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Envie um arquivo de imagem valido.")
@@ -432,6 +464,16 @@ async def auto_repair(
     base_rgb = Image.new("RGB", source_rgba.size, (235, 235, 235))
     base_rgb.paste(source_rgba.convert("RGB"), mask=alpha)
 
+    strength, guidance_scale, num_inference_steps = _tune_inpaint_params(
+        strength, guidance_scale, num_inference_steps
+    )
+
+    default_resolution = "256" if _is_cpu_mode() else "512"
+    inpaint_resolution = int(os.getenv("INPAINT_RESOLUTION", default_resolution))
+    work_size = _working_size(base_rgb.size, inpaint_resolution)
+    base_work = base_rgb.resize(work_size, Image.Resampling.LANCZOS)
+    mask_work = mask_image.resize(work_size, Image.Resampling.BILINEAR)
+
     try:
         pipe = _get_inpaint_pipeline()
     except Exception as exc:
@@ -447,8 +489,8 @@ async def auto_repair(
         result = pipe(
             prompt=prompt,
             negative_prompt=negative_prompt,
-            image=base_rgb,
-            mask_image=mask_image,
+            image=base_work,
+            mask_image=mask_work,
             strength=strength,
             guidance_scale=guidance_scale,
             num_inference_steps=num_inference_steps,
@@ -489,8 +531,8 @@ async def outpaint(
     seed: int = Form(-1),
 ) -> Response:
     """Completa partes cortadas (cabeca/ombros) expandindo a foto original nas bordas indicadas."""
-    if num_inference_steps < 10 or num_inference_steps > 100:
-        raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 10 e 100.")
+    if num_inference_steps < 1 or num_inference_steps > 100:
+        raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 1 e 100.")
 
     source = _load_image_from_upload(file, mode="RGB", label="file")
     pads = {"top": pad_top, "left": pad_left, "right": pad_right, "bottom": pad_bottom}
@@ -503,9 +545,12 @@ async def outpaint(
         source.save(out_passthrough, format="PNG")
         return Response(content=out_passthrough.getvalue(), media_type="image/png")
 
+    _, guidance_scale, num_inference_steps = _tune_inpaint_params(0.99, guidance_scale, num_inference_steps)
+
     overlap = max(8, int(min(source.size) * 0.02))
     canvas, mask = _outpaint_canvas(source, pads, overlap)
-    work_size = _working_size(canvas.size, int(os.getenv("INPAINT_RESOLUTION", "1024")))
+    default_resolution = "256" if _is_cpu_mode() else "1024"
+    work_size = _working_size(canvas.size, int(os.getenv("INPAINT_RESOLUTION", default_resolution)))
 
     try:
         pipe = _get_inpaint_pipeline()
