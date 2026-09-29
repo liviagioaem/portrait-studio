@@ -31,17 +31,27 @@ _torch = None
 _AutoPipelineForImage2Image = None
 _AutoPipelineForInpainting = None
 _img2img_pipeline_name = None
+_inpaint_pipeline_name = None
 _frontend_dir = Path(__file__).resolve().parent.parent
 _frontend_index = _frontend_dir / "index.html"
 
 
 def _ensure_ml_imports() -> None:
-    global _torch, _AutoPipelineForImage2Image, _AutoPipelineForInpainting, _img2img_pipeline_name
+    global _torch, _AutoPipelineForImage2Image, _AutoPipelineForInpainting, _img2img_pipeline_name, _inpaint_pipeline_name
     if _torch is not None and _AutoPipelineForImage2Image is not None and _AutoPipelineForInpainting is not None:
         return
 
     import torch as _torch_mod
-    from diffusers import AutoPipelineForInpainting as _inpaint_cls
+
+    try:
+        from diffusers import AutoPipelineForInpainting as _inpaint_cls
+
+        _inpaint_pipeline_name = "AutoPipelineForInpainting"
+    except ImportError:
+        # Fallback para versoes antigas do diffusers sem auto pipeline de inpainting.
+        from diffusers import StableDiffusionInpaintPipeline as _inpaint_cls
+
+        _inpaint_pipeline_name = "StableDiffusionInpaintPipeline"
 
     try:
         from diffusers import AutoPipelineForImage2Image as _img2img_cls
@@ -109,9 +119,14 @@ def _get_inpaint_pipeline():
         if _inpaint_pipeline is not None:
             return _inpaint_pipeline
 
-        # SDXL inpainting (~7 GB VRAM). Para GPUs menores use
-        # INPAINT_MODEL_ID=stable-diffusion-v1-5/stable-diffusion-inpainting e INPAINT_RESOLUTION=512.
-        model_id = os.getenv("INPAINT_MODEL_ID", "diffusers/stable-diffusion-xl-1.0-inpainting-0.1")
+        # SDXL inpainting (~7 GB VRAM) com AutoPipeline. Se o ambiente tiver
+        # somente StableDiffusionInpaintPipeline, usamos modelo SD1.5 compativel.
+        default_inpaint_model = (
+            "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
+            if _inpaint_pipeline_name == "AutoPipelineForInpainting"
+            else "runwayml/stable-diffusion-inpainting"
+        )
+        model_id = os.getenv("INPAINT_MODEL_ID", default_inpaint_model)
         token = os.getenv("HF_TOKEN") or None
         device = os.getenv("DEVICE", "cuda").lower()
 
@@ -125,7 +140,7 @@ def _get_inpaint_pipeline():
             pipe = _AutoPipelineForInpainting.from_pretrained(
                 model_id, variant="fp16" if dtype == _torch.float16 else None, **load_kwargs
             )
-        except (OSError, ValueError):
+        except (OSError, ValueError, TypeError):
             # Nem todo repositorio publica pesos na variante fp16.
             pipe = _AutoPipelineForInpainting.from_pretrained(model_id, **load_kwargs)
 
