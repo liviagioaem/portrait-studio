@@ -1,6 +1,6 @@
 import io
 import os
-from threading import Lock
+from threading import Lock, Thread
 from pathlib import Path
 
 import numpy as np
@@ -207,6 +207,39 @@ def _fit_image_for_model(image: Image.Image, target: int) -> Image.Image:
     return image.resize(_working_size(image.size, target), Image.Resampling.LANCZOS)
 
 
+def _is_cpu_mode() -> bool:
+    return os.getenv("DEVICE", "cuda").lower() != "cuda"
+
+
+def _tune_enhance_params(strength: float, guidance_scale: float, num_inference_steps: int) -> tuple[float, float, int]:
+    # Em CPU do Render, forca parametros mais leves para reduzir 502 por timeout/OOM.
+    if _is_cpu_mode() and os.getenv("CPU_SAFE_MODE", "1") == "1":
+        cpu_max_steps = int(os.getenv("CPU_MAX_STEPS", "6"))
+        cpu_max_guidance = float(os.getenv("CPU_MAX_GUIDANCE", "2.0"))
+        strength = min(strength, 0.4)
+        guidance_scale = min(guidance_scale, cpu_max_guidance)
+        num_inference_steps = min(num_inference_steps, cpu_max_steps)
+    return strength, guidance_scale, num_inference_steps
+
+
+def _warmup_models_background() -> None:
+    if os.getenv("WARMUP_ON_START", "1") != "1":
+        return
+
+    def _run() -> None:
+        try:
+            _get_pipeline()
+        except Exception as exc:
+            print(f"[warmup] img2img warmup failed: {exc}")
+
+    Thread(target=_run, daemon=True).start()
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    _warmup_models_background()
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
@@ -240,9 +273,9 @@ async def enhance(
     file: UploadFile = File(...),
     prompt: str = Form("professional portrait photo, natural skin texture, balanced studio lighting, realistic details"),
     negative_prompt: str = Form("artifacts, blur, deformed face, extra limbs, text, watermark, cartoon"),
-    strength: float = Form(0.45),
-    guidance_scale: float = Form(7.0),
-    num_inference_steps: int = Form(30),
+    strength: float = Form(0.35),
+    guidance_scale: float = Form(5.0),
+    num_inference_steps: int = Form(10),
     seed: int = Form(-1),
 ) -> Response:
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -251,8 +284,8 @@ async def enhance(
     if strength < 0.05 or strength > 0.95:
         raise HTTPException(status_code=400, detail="strength deve estar entre 0.05 e 0.95.")
 
-    if num_inference_steps < 10 or num_inference_steps > 80:
-        raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 10 e 80.")
+    if num_inference_steps < 1 or num_inference_steps > 80:
+        raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 1 e 80.")
 
     try:
         data = await file.read()
@@ -260,7 +293,12 @@ async def enhance(
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Nao foi possivel ler a imagem: {exc}") from exc
 
-    work_resolution = int(os.getenv("IMG2IMG_RESOLUTION", "768"))
+    strength, guidance_scale, num_inference_steps = _tune_enhance_params(
+        strength, guidance_scale, num_inference_steps
+    )
+
+    default_resolution = "256" if _is_cpu_mode() else "768"
+    work_resolution = int(os.getenv("IMG2IMG_RESOLUTION", default_resolution))
     source_for_model = _fit_image_for_model(source, work_resolution)
 
     try:
