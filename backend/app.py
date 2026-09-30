@@ -260,7 +260,9 @@ def _tune_inpaint_params(strength: float, guidance_scale: float, num_inference_s
 
 
 def _warmup_models_background() -> None:
-    if os.getenv("WARMUP_ON_START", "1") != "1":
+    # Em hospedagens com limite de boot (ex.: Render free/starter),
+    # aquecer modelo no startup pode causar 502 intermitente.
+    if os.getenv("WARMUP_ON_START", "0") != "1":
         return
 
     def _run() -> None:
