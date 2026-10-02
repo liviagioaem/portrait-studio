@@ -972,12 +972,13 @@
     const MODEL_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/";
     const OUTPAINT_ENABLED = true;
     const OUTPAINT_MAX_PAD_RATIO = 0.6;
+    const OUTPAINT_RETRY_COOLDOWN_MS = 15000;
     const API_BASE = String(localStorage.getItem("portrait_api_base") || window.PORTRAIT_API_BASE || "").trim().replace(/\/$/, "");
     const OUTPAINT_API = API_BASE ? `${API_BASE}/outpaint` : "";
     let segmenterPromise;
     let faceDetectorPromise;
     let modelFailure = null;
-    let outpaintUnavailable = false;
+    let outpaintRetryAfter = 0;
 
     function releaseItem(item) {
       URL.revokeObjectURL(item.thumbURL);
@@ -1426,8 +1427,9 @@
         left += solid(0, y);
         right += solid(width - 1, y);
       }
-      const minRow = Math.max(4, width * 0.03);
-      const minColumn = Math.max(4, height * 0.03);
+      // Thresholds mais suaves reduzem falsos negativos quando há recorte leve.
+      const minRow = Math.max(3, width * 0.02);
+      const minColumn = Math.max(3, height * 0.02);
       return { top: top >= minRow, bottom: bottom >= minRow, left: left >= minColumn, right: right >= minColumn };
     }
 
@@ -1474,13 +1476,14 @@
 
     // Completa cabeça/ombros cortados com IA (Hugging Face) expandindo a foto original.
     async function maybeOutpaintSource(img, foreground, eyeL, eyeR, settings) {
-      if (!OUTPAINT_ENABLED || outpaintUnavailable || !OUTPAINT_API) return null;
+      if (!OUTPAINT_ENABLED || !OUTPAINT_API) return null;
+      if (outpaintRetryAfter && Date.now() < outpaintRetryAfter) return null;
       const touches = edgeContact(foreground);
       const needed = requiredSourcePadding(img, eyeL, eyeR, settings);
       const maxPad = Math.round(Math.max(img.naturalWidth, img.naturalHeight) * OUTPAINT_MAX_PAD_RATIO);
       const pads = {};
       for (const side of ["top", "left", "right", "bottom"]) {
-        pads[side] = touches[side] && needed[side] > 2 ? Math.min(maxPad, Math.ceil(needed[side] * 1.15 + 16)) : 0;
+        pads[side] = touches[side] && needed[side] > 1 ? Math.min(maxPad, Math.ceil(needed[side] * 1.15 + 16)) : 0;
       }
       if (!Object.values(pads).some(Boolean)) return null;
 
@@ -1501,13 +1504,18 @@
       try {
         response = await fetch(OUTPAINT_API, { method: "POST", body: form });
       } catch {
-        outpaintUnavailable = true;
-        els.notice.textContent = `API de IA indisponível em ${API_BASE}. As fotos seguem sem completar partes cortadas.`;
+        outpaintRetryAfter = Date.now() + OUTPAINT_RETRY_COOLDOWN_MS;
+        els.notice.textContent = `API de IA indisponível em ${API_BASE}. Nova tentativa automática em alguns segundos.`;
         return null;
       }
+      outpaintRetryAfter = 0;
       if (!response.ok) {
         const detail = await response.text().catch(() => "");
-        els.notice.textContent = `IA não conseguiu completar a foto (HTTP ${response.status}). ${detail}`.trim();
+        const temporaryError = response.status >= 500 || response.status === 429;
+        if (temporaryError) {
+          outpaintRetryAfter = Date.now() + OUTPAINT_RETRY_COOLDOWN_MS;
+        }
+        els.notice.textContent = `IA não conseguiu completar esta foto (HTTP ${response.status}). ${detail}`.trim();
         return null;
       }
       const expanded = await blobToImage(await response.blob());
