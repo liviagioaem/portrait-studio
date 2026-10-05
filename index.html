@@ -420,7 +420,7 @@
       position: absolute;
       top: var(--guide-center-y, 50%);
       left: 50%;
-      width: calc(min(calc((100% - 12px) * var(--fit-w, 1)), calc((100% - 12px) * var(--fit-h, 1))) - 6px);
+      width: min(calc((100% - 12px) * var(--fit-w, 1)), calc((100% - 12px) * var(--fit-h, 1)));
       aspect-ratio: 1;
       transform: translate(-50%, -50%);
       border: 2px solid rgba(130, 103, 255, 0.35);
@@ -433,7 +433,7 @@
       position: absolute;
       top: var(--guide-center-y, 50%);
       left: 50%;
-      width: calc(min(calc((100% - 12px) * var(--fit-w, 1)), calc((100% - 12px) * var(--fit-h, 1))) - 6px);
+      width: min(calc((100% - 12px) * var(--fit-w, 1)), calc((100% - 12px) * var(--fit-h, 1)));
       aspect-ratio: 1;
       transform: translate(-50%, -50%);
       border-radius: 50%;
