@@ -9,8 +9,22 @@ def main() -> None:
     parser.add_argument("image", help="Caminho da imagem de entrada")
     parser.add_argument("--api", default="http://localhost:8000", help="Base URL da API")
     parser.add_argument("--out", default="enhance_test_output.png", help="Arquivo de saida")
-    parser.add_argument("--prompt", default="professional portrait photo, natural skin texture, balanced studio lighting, realistic details")
-    parser.add_argument("--negative", default="artifacts, blur, deformed face, extra limbs, text, watermark, cartoon")
+    parser.add_argument(
+        "--prompt",
+        default=(
+            "professional studio headshot of the same person, preserve identity and facial geometry, "
+            "natural skin texture with realistic pores, neutral white balance, soft even lighting, "
+            "sharp eyes, clean edges, high realism"
+        ),
+    )
+    parser.add_argument(
+        "--negative",
+        default=(
+            "cartoon, anime, painting, cgi, plastic skin, waxy skin, over-smoothing, lowres, blurry, "
+            "noise, jpeg artifacts, deformed face, asymmetrical eyes, crossed eyes, extra eyes, extra limbs, "
+            "duplicate person, text, watermark, logo"
+        ),
+    )
     parser.add_argument("--strength", type=float, default=0.45)
     parser.add_argument("--guidance", type=float, default=7.0)
     parser.add_argument("--steps", type=int, default=30)

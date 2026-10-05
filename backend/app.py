@@ -336,8 +336,16 @@ def frontend_config() -> Response:
 @app.post("/enhance")
 async def enhance(
     file: UploadFile = File(...),
-    prompt: str = Form("professional portrait photo, natural skin texture, balanced studio lighting, realistic details"),
-    negative_prompt: str = Form("artifacts, blur, deformed face, extra limbs, text, watermark, cartoon"),
+    prompt: str = Form(
+        "professional studio headshot of the same person, preserve identity and facial geometry, "
+        "natural skin texture with realistic pores, neutral white balance, soft even lighting, "
+        "sharp eyes, clean edges, high realism"
+    ),
+    negative_prompt: str = Form(
+        "cartoon, anime, painting, cgi, plastic skin, waxy skin, over-smoothing, lowres, blurry, "
+        "noise, jpeg artifacts, deformed face, asymmetrical eyes, crossed eyes, extra eyes, extra limbs, "
+        "duplicate person, text, watermark, logo"
+    ),
     strength: float = Form(0.35),
     guidance_scale: float = Form(5.0),
     num_inference_steps: int = Form(10),
@@ -401,8 +409,16 @@ async def enhance(
 async def inpaint(
     image: UploadFile = File(...),
     mask: UploadFile = File(...),
-    prompt: str = Form("clean natural portrait skin, realistic details, consistent lighting"),
-    negative_prompt: str = Form("artifacts, blur, deformed face, text, watermark"),
+    prompt: str = Form(
+        "repair only the masked region of the same person, preserve identity, expression, and pose, "
+        "natural skin texture, realistic anatomy, seamless blend with surrounding pixels, "
+        "matching lighting, color, and noise level"
+    ),
+    negative_prompt: str = Form(
+        "change identity, different person, age change, gender change, unrealistic skin, plastic skin, "
+        "deformed face, asymmetrical eyes, extra eyes, extra mouth, extra limbs, seam, halo, blur, "
+        "text, watermark, logo"
+    ),
     strength: float = Form(0.6),
     guidance_scale: float = Form(4.0),
     num_inference_steps: int = Form(10),
@@ -482,8 +498,14 @@ async def inpaint(
 @app.post("/auto-repair")
 async def auto_repair(
     file: UploadFile = File(...),
-    prompt: str = Form("complete cropped portrait edges, restore missing head or shoulders, realistic anatomy"),
-    negative_prompt: str = Form("artifacts, blur, extra limbs, deformed face, text, watermark"),
+    prompt: str = Form(
+        "complete cropped portrait borders of the same person, restore missing hair, head contour, and shoulders, "
+        "maintain identity and realistic anatomy, seamless continuation, natural texture and lighting"
+    ),
+    negative_prompt: str = Form(
+        "different person, identity drift, artifacts, seam, halo, blur, deformed face, extra limbs, "
+        "duplicate head, text, watermark, logo"
+    ),
     strength: float = Form(0.82),
     guidance_scale: float = Form(7.0),
     num_inference_steps: int = Form(28),
@@ -581,11 +603,13 @@ async def outpaint(
     pad_right: int = Form(0),
     pad_bottom: int = Form(0),
     prompt: str = Form(
-        "professional headshot photo of the same person, complete head and hair, natural shoulders and clothing, "
-        "seamless continuation of the photo, consistent lighting and background, realistic"
+        "professional headshot photo of the same person, extend canvas naturally, complete missing head or hair "
+        "only where needed, preserve facial identity and expression, natural shoulders and clothing, "
+        "seamless continuation of background, matching perspective, color, and lighting, photorealistic"
     ),
     negative_prompt: str = Form(
-        "cropped, frame, border, seam, text, watermark, extra head, extra limbs, deformed, blurry, cartoon"
+        "different person, identity drift, cropped, frame, border, seam, halo, duplicate face, extra head, "
+        "extra limbs, deformed anatomy, blurry, cartoon, text, watermark, logo"
     ),
     guidance_scale: float = Form(7.0),
     num_inference_steps: int = Form(30),
