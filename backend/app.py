@@ -16,10 +16,17 @@ load_dotenv()
 
 app = FastAPI(title="Portrait Studio FLUX API", version="0.1.0")
 
+def _get_cors_origins() -> list[str]:
+    configured = os.getenv("CORS_ORIGINS", "*").strip()
+    if configured == "*":
+        return ["*"]
+    return [origin.strip() for origin in configured.split(",") if origin.strip()]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_get_cors_origins(),
+    allow_credentials=os.getenv("CORS_ALLOW_CREDENTIALS", "0") == "1",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -34,6 +41,75 @@ _img2img_pipeline_name = None
 _inpaint_pipeline_name = None
 _frontend_dir = Path(__file__).resolve().parent.parent
 _frontend_index = _frontend_dir / "index.html"
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    return os.getenv(name, "1" if default else "0").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+
+
+def _device() -> str:
+    return os.getenv("DEVICE", "cuda").strip().lower()
+
+
+def _validate_device() -> None:
+    device = _device()
+    if device not in {"cuda", "cpu"}:
+        raise RuntimeError("DEVICE deve ser 'cuda' ou 'cpu'.")
+    if device == "cuda" and _torch is not None and not _torch.cuda.is_available():
+        raise RuntimeError(
+            "CUDA nao disponivel. Configure DEVICE=cpu (lento) ou use GPU NVIDIA."
+        )
+
+
+def _model_dtype():
+    _ensure_ml_imports()
+    return _torch.float16 if _device() == "cuda" else _torch.float32
+
+
+def _load_pipeline(cls, model_id: str):
+    """Carrega um pipeline aceitando repos que nao possuem variante fp16."""
+    dtype = _model_dtype()
+    kwargs = {
+        "torch_dtype": dtype,
+        "local_files_only": False,
+    }
+
+    token = os.getenv("HF_TOKEN")
+    if token:
+        kwargs["token"] = token
+
+    if dtype == _torch.float16:
+        try:
+            return cls.from_pretrained(model_id, variant="fp16", **kwargs)
+        except (OSError, ValueError, TypeError):
+            pass
+
+    return cls.from_pretrained(model_id, **kwargs)
+
+
+def _prepare_pipeline(pipe):
+    if _device() == "cuda" and _env_bool("LOW_VRAM"):
+        pipe.enable_model_cpu_offload()
+    else:
+        pipe = pipe.to(_device())
+
+    return pipe
+
+
+def _seed_generator(seed: int):
+    if seed < 0:
+        return None
+
+    _ensure_ml_imports()
+    return _torch.Generator(device=_device()).manual_seed(seed)
+
+
+def _png_response(image: Image.Image) -> Response:
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return Response(content=buffer.getvalue(), media_type="image/png")
 
 
 def _ensure_ml_imports() -> None:
@@ -79,32 +155,14 @@ def _get_pipeline():
         if _pipeline is not None:
             return _pipeline
 
-        model_id = os.getenv("IMG2IMG_MODEL_ID", "runwayml/stable-diffusion-v1-5")
-        token = os.getenv("HF_TOKEN") or None
-        device = os.getenv("DEVICE", "cuda").lower()
+        _validate_device()
+        model_id = os.getenv(
+            "IMG2IMG_MODEL_ID",
+            "runwayml/stable-diffusion-v1-5",
+        )
 
-        if device == "cuda" and not _torch.cuda.is_available():
-            raise RuntimeError("CUDA nao disponivel. Configure DEVICE=cpu (lento) ou use GPU NVIDIA.")
-
-        dtype = _torch.float16 if device == "cuda" else _torch.float32
-        load_kwargs = {"torch_dtype": dtype, "token": token, "local_files_only": False}
-
-        try:
-            pipe = _AutoPipelineForImage2Image.from_pretrained(
-                model_id,
-                variant="fp16" if dtype == _torch.float16 else None,
-                **load_kwargs,
-            )
-        except (OSError, ValueError, TypeError):
-            # Alguns pipelines/versoes nao aceitam `variant` ou exigem assinatura diferente.
-            pipe = _AutoPipelineForImage2Image.from_pretrained(model_id, **load_kwargs)
-
-        if device == "cuda" and os.getenv("LOW_VRAM", "0") == "1":
-            pipe.enable_model_cpu_offload()
-        else:
-            pipe = pipe.to(device)
-
-        _pipeline = pipe
+        pipe = _load_pipeline(_AutoPipelineForImage2Image, model_id)
+        _pipeline = _prepare_pipeline(pipe)
         return _pipeline
 
 
@@ -119,49 +177,58 @@ def _get_inpaint_pipeline():
         if _inpaint_pipeline is not None:
             return _inpaint_pipeline
 
-        # SDXL inpainting (~7 GB VRAM) com AutoPipeline. Se o ambiente tiver
-        # somente StableDiffusionInpaintPipeline, usamos modelo SD1.5 compativel.
-        default_inpaint_model = (
+        _validate_device()
+
+        default_model = (
             "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
             if _inpaint_pipeline_name == "AutoPipelineForInpainting"
             else "runwayml/stable-diffusion-inpainting"
         )
-        model_id = os.getenv("INPAINT_MODEL_ID", default_inpaint_model)
-        token = os.getenv("HF_TOKEN") or None
-        device = os.getenv("DEVICE", "cuda").lower()
+        model_id = os.getenv("INPAINT_MODEL_ID", default_model)
 
-        if device == "cuda" and not _torch.cuda.is_available():
-            raise RuntimeError("CUDA nao disponivel. Configure DEVICE=cpu (lento) ou use GPU NVIDIA.")
-
-        dtype = _torch.float16 if device == "cuda" else _torch.float32
-        load_kwargs = {"torch_dtype": dtype, "token": token, "local_files_only": False}
-
-        try:
-            pipe = _AutoPipelineForInpainting.from_pretrained(
-                model_id, variant="fp16" if dtype == _torch.float16 else None, **load_kwargs
-            )
-        except (OSError, ValueError, TypeError):
-            # Nem todo repositorio publica pesos na variante fp16.
-            pipe = _AutoPipelineForInpainting.from_pretrained(model_id, **load_kwargs)
-
-        if device == "cuda" and os.getenv("LOW_VRAM", "0") == "1":
-            pipe.enable_model_cpu_offload()
-        else:
-            pipe = pipe.to(device)
-
-        _inpaint_pipeline = pipe
+        pipe = _load_pipeline(_AutoPipelineForInpainting, model_id)
+        _inpaint_pipeline = _prepare_pipeline(pipe)
         return _inpaint_pipeline
 
-
-def _load_image_from_upload(upload: UploadFile, *, mode: str, label: str) -> Image.Image:
+def _read_upload_bytes(upload: UploadFile, label: str) -> bytes:
     if not upload.content_type or not upload.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail=f"{label} precisa ser um arquivo de imagem valido.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"{label} precisa ser um arquivo de imagem valido.",
+        )
+
+    max_mb = int(os.getenv("MAX_UPLOAD_MB", "15"))
+    max_bytes = max_mb * 1024 * 1024
+    data = upload.file.read()
+
+    if len(data) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"{label} excede o limite de {max_mb} MB.",
+        )
+
+    return data
+
+
+def _load_image_from_upload(
+    upload: UploadFile,
+    *,
+    mode: str,
+    label: str,
+) -> Image.Image:
+    data = _read_upload_bytes(upload, label)
 
     try:
-        data = upload.file.read()
-        return Image.open(io.BytesIO(data)).convert(mode)
+        with Image.open(io.BytesIO(data)) as image:
+            image.verify()
+
+        with Image.open(io.BytesIO(data)) as image:
+            return image.convert(mode)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Nao foi possivel ler {label}: {exc}") from exc
+        raise HTTPException(
+            status_code=400,
+            detail=f"Nao foi possivel ler {label}: {exc}",
+        ) from exc
 
 
 def _opaque_bounds(alpha: Image.Image) -> tuple[int, int, int, int] | None:
@@ -451,17 +518,18 @@ def frontend_config() -> Response:
 
 
 @app.post("/enhance")
-async def enhance(
+def enhance(
     file: UploadFile = File(...),
     prompt: str = Form(
-        "professional studio headshot of the same person, preserve identity and facial geometry, "
-        "natural skin texture with realistic pores, neutral white balance, soft even lighting, "
-        "sharp eyes, clean edges, high realism"
+        "high-quality professional studio headshot of the same person, preserve identity and facial geometry, "
+        "natural realistic skin texture with pores, accurate eyes and lips, balanced facial symmetry, "
+        "neutral white balance, soft even studio lighting, subtle contrast, clean edges, "
+        "photorealistic, high detail, no overprocessing"
     ),
     negative_prompt: str = Form(
-        "cartoon, anime, painting, cgi, plastic skin, waxy skin, over-smoothing, lowres, blurry, "
-        "noise, jpeg artifacts, deformed face, asymmetrical eyes, crossed eyes, extra eyes, extra limbs, "
-        "duplicate person, text, watermark, logo"
+        "cartoon, anime, painting, cgi, plastic skin, waxy skin, oversharpen, over-smoothing, lowres, blurry, "
+        "noise, jpeg artifacts, dark blotch, black smudge, deformed face, asymmetrical eyes, crossed eyes, "
+        "extra eyes, extra limbs, duplicate person, text, watermark, logo"
     ),
     strength: float = Form(0.35),
     guidance_scale: float = Form(5.0),
@@ -476,9 +544,11 @@ async def enhance(
 
     if num_inference_steps < 1 or num_inference_steps > 80:
         raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 1 e 80.")
+    if guidance_scale < 0 or guidance_scale > 30:
+        raise HTTPException(status_code=400, detail="guidance_scale deve estar entre 0 e 30.")
 
     try:
-        data = await file.read()
+        data = _read_upload_bytes(file, "file")
         source = Image.open(io.BytesIO(data)).convert("RGB")
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Nao foi possivel ler a imagem: {exc}") from exc
@@ -496,11 +566,7 @@ async def enhance(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Falha ao carregar modelo: {exc}") from exc
 
-    generator = None
-    if seed >= 0:
-        _ensure_ml_imports()
-        dev = "cuda" if os.getenv("DEVICE", "cuda").lower() == "cuda" else "cpu"
-        generator = _torch.Generator(device=dev).manual_seed(seed)
+    generator = _seed_generator(seed)
 
     try:
         result = pipe(
@@ -517,24 +583,22 @@ async def enhance(
         # Erro comum: OOM em GPU
         raise HTTPException(status_code=500, detail=f"Erro de inferencia: {exc}") from exc
 
-    out_buf = io.BytesIO()
-    output.save(out_buf, format="PNG")
-    return Response(content=out_buf.getvalue(), media_type="image/png")
+    return _png_response(output)
 
 
 @app.post("/inpaint")
-async def inpaint(
+def inpaint(
     image: UploadFile = File(...),
     mask: UploadFile = File(...),
     prompt: str = Form(
-        "reconstruct the masked region as a standardized professional portrait, complete missing areas with "
-        "plausible human anatomy, preserve person identity when visible, coherent hairline, forehead, ears, "
-        "jawline, neck and shoulders, centered headshot composition, soft neutral studio background, "
-        "balanced skin texture and photorealistic details, seamless transition with surrounding pixels"
+        "reconstruct only the masked region as a high-quality standardized professional portrait, "
+        "create missing parts with plausible human anatomy and coherent proportions, preserve person identity when visible, "
+        "coherent hairline, forehead, ears, jawline, neck and shoulders, centered headshot composition, "
+        "natural skin microtexture, consistent color temperature and grain, seamless blend with surrounding pixels, photorealistic"
     ),
     negative_prompt: str = Form(
-        "painting, cartoon, anime, cgi, doll face, plastic skin, waxy skin, black smudge, dark blotch, "
-        "muddy texture, blur, seam, halo, duplicated face, extra eyes, extra mouth, extra nose, extra limbs, "
+        "painting, cartoon, anime, cgi, doll face, plastic skin, waxy skin, black smudge, dark blotch, muddy texture, "
+        "blur, seam, halo, ghosting, duplicated face, extra eyes, extra mouth, extra nose, extra limbs, "
         "deformed anatomy, distorted perspective, text, watermark, logo"
     ),
     strength: float = Form(0.58),
@@ -564,9 +628,7 @@ async def inpaint(
     mask_image = _prepare_inpaint_mask(mask_image, source.size, blur_radius=mask_blur)
 
     if mask_image.getbbox() is None:
-        out_passthrough = io.BytesIO()
-        source.save(out_passthrough, format="PNG")
-        return Response(content=out_passthrough.getvalue(), media_type="image/png")
+        return _png_response(source)
 
     if realistic_mode:
         coverage = _mask_coverage(mask_image)
@@ -595,11 +657,7 @@ async def inpaint(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Falha ao carregar modelo de inpainting: {exc}") from exc
 
-    generator = None
-    if seed >= 0:
-        _ensure_ml_imports()
-        dev = "cuda" if os.getenv("DEVICE", "cuda").lower() == "cuda" else "cpu"
-        generator = _torch.Generator(device=dev).manual_seed(seed)
+    generator = _seed_generator(seed)
 
     try:
         result = pipe(
@@ -623,18 +681,16 @@ async def inpaint(
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=f"Erro de inferencia no inpainting: {exc}") from exc
 
-    out_buf = io.BytesIO()
-    output.save(out_buf, format="PNG")
-    return Response(content=out_buf.getvalue(), media_type="image/png")
+    return _png_response(output)
 
 
 @app.post("/auto-repair")
 async def auto_repair(
     file: UploadFile = File(...),
     prompt: str = Form(
-        "complete cropped portrait borders by constructing missing head and upper body regions, restore missing "
-        "hair, skull contour, ears, neck and shoulders with realistic anatomy, preserve person identity when visible, "
-        "keep studio portrait style with coherent lighting and neutral background"
+        "complete cropped portrait borders by constructing missing head and upper body regions with photorealistic quality, "
+        "restore missing hair volume, skull contour, ears, neck and shoulders with realistic anatomy and proportions, "
+        "preserve person identity when visible, keep standardized studio portrait style, coherent lighting, and neutral background"
     ),
     negative_prompt: str = Form(
         "cartoon, cgi, black patch, dark stain, seam, halo, blur, identity drift, duplicated head, "
@@ -655,7 +711,7 @@ async def auto_repair(
         raise HTTPException(status_code=400, detail="Envie um arquivo de imagem valido.")
 
     try:
-        source_data = await file.read()
+        source_data = _read_upload_bytes(file, "file")
         source_rgba = Image.open(io.BytesIO(source_data)).convert("RGBA")
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Nao foi possivel ler a imagem: {exc}") from exc
@@ -667,15 +723,11 @@ async def auto_repair(
 
     touches = _touches_edges(bounds, source_rgba.size, margin=max(2, int(min(source_rgba.size) * 0.015)))
     if not any(touches.values()):
-        out_passthrough = io.BytesIO()
-        source_rgba.save(out_passthrough, format="PNG")
-        return Response(content=out_passthrough.getvalue(), media_type="image/png")
+        return _png_response(source_rgba)
 
     mask_image = _auto_repair_mask(alpha, touches)
     if mask_image.getbbox() is None:
-        out_passthrough = io.BytesIO()
-        source_rgba.save(out_passthrough, format="PNG")
-        return Response(content=out_passthrough.getvalue(), media_type="image/png")
+        return _png_response(source_rgba)
 
     # Flatten over neutral background for stable inpainting, then recover transparency.
     base_rgb = Image.new("RGB", source_rgba.size, (235, 235, 235))
@@ -696,11 +748,7 @@ async def auto_repair(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Falha ao carregar modelo de inpainting: {exc}") from exc
 
-    generator = None
-    if seed >= 0:
-        _ensure_ml_imports()
-        dev = "cuda" if os.getenv("DEVICE", "cuda").lower() == "cuda" else "cpu"
-        generator = _torch.Generator(device=dev).manual_seed(seed)
+    generator = _seed_generator(seed)
 
     try:
         result = pipe(
@@ -726,23 +774,21 @@ async def auto_repair(
     repaired_rgba = repaired_rgb.convert("RGBA")
     repaired_rgba.putalpha(expanded_alpha)
 
-    out_buf = io.BytesIO()
-    repaired_rgba.save(out_buf, format="PNG")
-    return Response(content=out_buf.getvalue(), media_type="image/png")
+    return _png_response(repaired_rgba)
 
 
 @app.post("/outpaint")
-async def outpaint(
+def outpaint(
     file: UploadFile = File(...),
     pad_top: int = Form(0),
     pad_left: int = Form(0),
     pad_right: int = Form(0),
     pad_bottom: int = Form(0),
     prompt: str = Form(
-        "professional standardized headshot, extend canvas and construct missing portrait areas realistically, "
+        "professional standardized headshot, extend canvas and construct missing portrait areas with high realism, "
         "complete top of head, hair, neck and shoulders when absent, preserve person identity when visible, "
         "natural proportions, centered passport-style framing, clean neutral studio background, "
-        "consistent perspective, color and soft lighting, photorealistic"
+        "consistent perspective, color and soft lighting, seamless transitions, photorealistic"
     ),
     negative_prompt: str = Form(
         "cartoon, cgi, black smudge, muddy texture, cropped, border, seam, halo, duplicate face, extra head, "
@@ -755,6 +801,8 @@ async def outpaint(
     """Completa partes cortadas (cabeca/ombros) expandindo a foto original nas bordas indicadas."""
     if num_inference_steps < 1 or num_inference_steps > 100:
         raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 1 e 100.")
+    if guidance_scale < 0 or guidance_scale > 30:
+        raise HTTPException(status_code=400, detail="guidance_scale deve estar entre 0 e 30.")
 
     source = _load_image_from_upload(file, mode="RGB", label="file")
     pads = {"top": pad_top, "left": pad_left, "right": pad_right, "bottom": pad_bottom}
@@ -763,9 +811,7 @@ async def outpaint(
         raise HTTPException(status_code=400, detail=f"Cada pad deve estar entre 0 e {max_pad} px.")
 
     if not any(pads.values()):
-        out_passthrough = io.BytesIO()
-        source.save(out_passthrough, format="PNG")
-        return Response(content=out_passthrough.getvalue(), media_type="image/png")
+        return _png_response(source)
 
     _, guidance_scale, num_inference_steps = _tune_inpaint_params(0.99, guidance_scale, num_inference_steps)
 
@@ -779,11 +825,7 @@ async def outpaint(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Falha ao carregar modelo de inpainting: {exc}") from exc
 
-    generator = None
-    if seed >= 0:
-        _ensure_ml_imports()
-        dev = "cuda" if os.getenv("DEVICE", "cuda").lower() == "cuda" else "cpu"
-        generator = _torch.Generator(device=dev).manual_seed(seed)
+    generator = _seed_generator(seed)
 
     try:
         result = pipe(
@@ -809,6 +851,4 @@ async def outpaint(
     blend_mask = mask.filter(ImageFilter.GaussianBlur(radius=overlap / 2))
     final = Image.composite(generated, canvas, blend_mask)
 
-    out_buf = io.BytesIO()
-    final.save(out_buf, format="PNG")
-    return Response(content=out_buf.getvalue(), media_type="image/png")
+    return _png_response(final)

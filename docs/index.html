@@ -1869,8 +1869,12 @@
         statusBadge.classList.add(readyToDownload ? "done" : "pending");
         if (isWorking) statusBadge.classList.add("working");
         statusBadge.textContent = readyToDownload ? "✓" : "";
-        statusBadge.title = readyToDownload ? "Pronta para baixar" : statusLabel(item.status);
-        statusBadge.style.display = readyToDownload ? "grid" : "none";
+        statusBadge.title = readyToDownload
+          ? "Pronta para baixar"
+          : isWorking
+            ? "Ajustando foto..."
+            : statusLabel(item.status);
+        statusBadge.style.display = readyToDownload || isWorking ? "grid" : "none";
         visual.appendChild(statusBadge);
 
         const meta = document.createElement("div");
