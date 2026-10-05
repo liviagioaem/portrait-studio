@@ -304,8 +304,8 @@ def _refine_inpaint_for_realism(
         mask_blur = max(mask_blur, 2.2)
         blend_feather = max(blend_feather, 2.0)
     else:
-        strength = min(max(strength, 0.52), 0.78)
-        guidance_scale = min(max(guidance_scale, 2.2), 4.0)
+        strength = min(max(strength, 0.5), 0.7)
+        guidance_scale = min(max(guidance_scale, 2.2), 3.8)
         num_inference_steps = min(max(num_inference_steps, 18), 34)
         mask_blur = max(mask_blur, 2.6)
         blend_feather = max(blend_feather, 2.4)
@@ -323,6 +323,83 @@ def _composite_inpaint_result(
     if blend_feather > 0:
         blend_mask = blend_mask.filter(ImageFilter.GaussianBlur(radius=blend_feather))
     return Image.composite(generated_rgb.convert("RGB"), original_rgb.convert("RGB"), blend_mask)
+
+
+def _suppress_dark_artifacts(
+    base_rgb: Image.Image,
+    generated_rgb: Image.Image,
+    mask_image: Image.Image,
+) -> Image.Image:
+    """Reduce common black-smudge failures inside generated/masked areas."""
+    base = np.asarray(base_rgb.convert("RGB"), dtype=np.uint8)
+    gen = np.asarray(generated_rgb.convert("RGB"), dtype=np.uint8)
+    mask = np.asarray(mask_image.convert("L"), dtype=np.uint8)
+
+    # Luminance in BT.709 space.
+    luma = (0.2126 * gen[:, :, 0] + 0.7152 * gen[:, :, 1] + 0.0722 * gen[:, :, 2]).astype(np.float32)
+    chroma_span = gen.max(axis=2).astype(np.int16) - gen.min(axis=2).astype(np.int16)
+
+    dark_luma = int(os.getenv("INPAINT_DARK_LUMA", "28"))
+    max_chroma_span = int(os.getenv("INPAINT_DARK_CHROMA_SPAN", "26"))
+    min_mask = int(os.getenv("INPAINT_DARK_MIN_MASK", "92"))
+
+    masked_region = mask >= min_mask
+    artifact = masked_region & (luma <= dark_luma) & (chroma_span <= max_chroma_span)
+
+    masked_pixels = int(masked_region.sum())
+    artifact_pixels = int(artifact.sum())
+    if masked_pixels == 0 or artifact_pixels == 0:
+        return generated_rgb
+
+    artifact_ratio = artifact_pixels / masked_pixels
+    max_ratio = float(os.getenv("INPAINT_DARK_MAX_RATIO", "0.65"))
+
+    # Replace only clearly failed dark blobs; if failure dominates, rescue harder.
+    fixed = gen.copy()
+    fixed[artifact] = base[artifact]
+    if artifact_ratio > max_ratio:
+        alpha = float(os.getenv("INPAINT_DARK_RESCUE_BLEND", "0.45"))
+        alpha = max(0.0, min(1.0, alpha))
+        blend = (alpha * fixed.astype(np.float32) + (1.0 - alpha) * base.astype(np.float32)).astype(np.uint8)
+        fixed[masked_region] = blend[masked_region]
+
+    return Image.fromarray(fixed, mode="RGB")
+
+
+def _harmonize_generated_luma(
+    base_rgb: Image.Image,
+    generated_rgb: Image.Image,
+    mask_image: Image.Image,
+) -> Image.Image:
+    """Match generated-region luminance to source context to reduce blotchy/dull patches."""
+    base = np.asarray(base_rgb.convert("RGB"), dtype=np.uint8)
+    gen = np.asarray(generated_rgb.convert("RGB"), dtype=np.uint8)
+    mask = np.asarray(mask_image.convert("L"), dtype=np.uint8)
+
+    active = mask >= int(os.getenv("INPAINT_HARMONIZE_MIN_MASK", "92"))
+    if not np.any(active):
+        return generated_rgb
+
+    base_luma = 0.2126 * base[:, :, 0] + 0.7152 * base[:, :, 1] + 0.0722 * base[:, :, 2]
+    gen_luma = 0.2126 * gen[:, :, 0] + 0.7152 * gen[:, :, 1] + 0.0722 * gen[:, :, 2]
+
+    mean_base = float(base_luma[active].mean())
+    mean_gen = float(gen_luma[active].mean())
+    if mean_gen <= 1.0:
+        return generated_rgb
+
+    # Scale RGB uniformly to align brightness while preserving hue/chroma.
+    raw_gain = mean_base / mean_gen
+    min_gain = float(os.getenv("INPAINT_HARMONIZE_MIN_GAIN", "0.86"))
+    max_gain = float(os.getenv("INPAINT_HARMONIZE_MAX_GAIN", "1.22"))
+    gain = max(min_gain, min(max_gain, raw_gain))
+    if abs(gain - 1.0) < 0.03:
+        return generated_rgb
+
+    corrected = gen.astype(np.float32)
+    corrected[active] *= gain
+    corrected = np.clip(corrected, 0, 255).astype(np.uint8)
+    return Image.fromarray(corrected, mode="RGB")
 
 
 def _warmup_models_background() -> None:
@@ -450,18 +527,19 @@ async def inpaint(
     image: UploadFile = File(...),
     mask: UploadFile = File(...),
     prompt: str = Form(
-        "repair only the masked region of the same person, preserve identity, expression, and pose, "
-        "natural skin texture, realistic anatomy, seamless blend with surrounding pixels, "
-        "matching lighting, color, and noise level"
+        "reconstruct the masked region as a standardized professional portrait, complete missing areas with "
+        "plausible human anatomy, preserve person identity when visible, coherent hairline, forehead, ears, "
+        "jawline, neck and shoulders, centered headshot composition, soft neutral studio background, "
+        "balanced skin texture and photorealistic details, seamless transition with surrounding pixels"
     ),
     negative_prompt: str = Form(
-        "change identity, different person, age change, gender change, unrealistic skin, plastic skin, "
-        "deformed face, asymmetrical eyes, extra eyes, extra mouth, extra limbs, seam, halo, blur, "
-        "text, watermark, logo"
+        "painting, cartoon, anime, cgi, doll face, plastic skin, waxy skin, black smudge, dark blotch, "
+        "muddy texture, blur, seam, halo, duplicated face, extra eyes, extra mouth, extra nose, extra limbs, "
+        "deformed anatomy, distorted perspective, text, watermark, logo"
     ),
-    strength: float = Form(0.52),
-    guidance_scale: float = Form(3.2),
-    num_inference_steps: int = Form(18),
+    strength: float = Form(0.58),
+    guidance_scale: float = Form(3.8),
+    num_inference_steps: int = Form(24),
     seed: int = Form(-1),
     preserve_unmasked: bool = Form(True),
     mask_blur: float = Form(2.4),
@@ -535,6 +613,8 @@ async def inpaint(
             generator=generator,
         )
         generated = result.images[0].resize(source.size, Image.Resampling.LANCZOS)
+        generated = _harmonize_generated_luma(source, generated, mask_image)
+        generated = _suppress_dark_artifacts(source, generated, mask_image)
         output = (
             _composite_inpaint_result(source, generated, mask_image, blend_feather)
             if preserve_unmasked
@@ -552,16 +632,17 @@ async def inpaint(
 async def auto_repair(
     file: UploadFile = File(...),
     prompt: str = Form(
-        "complete cropped portrait borders of the same person, restore missing hair, head contour, and shoulders, "
-        "maintain identity and realistic anatomy, seamless continuation, natural texture and lighting"
+        "complete cropped portrait borders by constructing missing head and upper body regions, restore missing "
+        "hair, skull contour, ears, neck and shoulders with realistic anatomy, preserve person identity when visible, "
+        "keep studio portrait style with coherent lighting and neutral background"
     ),
     negative_prompt: str = Form(
-        "different person, identity drift, artifacts, seam, halo, blur, deformed face, extra limbs, "
-        "duplicate head, text, watermark, logo"
+        "cartoon, cgi, black patch, dark stain, seam, halo, blur, identity drift, duplicated head, "
+        "deformed face, extra limbs, text, watermark, logo"
     ),
-    strength: float = Form(0.82),
-    guidance_scale: float = Form(7.0),
-    num_inference_steps: int = Form(28),
+    strength: float = Form(0.72),
+    guidance_scale: float = Form(4.4),
+    num_inference_steps: int = Form(24),
     seed: int = Form(-1),
 ) -> Response:
     if strength < 0.05 or strength > 1.0:
@@ -638,6 +719,8 @@ async def auto_repair(
 
     if repaired_rgb.size != source_rgba.size:
         repaired_rgb = repaired_rgb.resize(source_rgba.size, Image.Resampling.LANCZOS)
+    repaired_rgb = _harmonize_generated_luma(base_rgb, repaired_rgb, mask_image)
+    repaired_rgb = _suppress_dark_artifacts(base_rgb, repaired_rgb, mask_image)
 
     expanded_alpha = ImageChops.lighter(alpha, mask_image.point(lambda value: int(min(255, value * 1.25))))
     repaired_rgba = repaired_rgb.convert("RGBA")
@@ -656,16 +739,17 @@ async def outpaint(
     pad_right: int = Form(0),
     pad_bottom: int = Form(0),
     prompt: str = Form(
-        "professional headshot photo of the same person, extend canvas naturally, complete missing head or hair "
-        "only where needed, preserve facial identity and expression, natural shoulders and clothing, "
-        "seamless continuation of background, matching perspective, color, and lighting, photorealistic"
+        "professional standardized headshot, extend canvas and construct missing portrait areas realistically, "
+        "complete top of head, hair, neck and shoulders when absent, preserve person identity when visible, "
+        "natural proportions, centered passport-style framing, clean neutral studio background, "
+        "consistent perspective, color and soft lighting, photorealistic"
     ),
     negative_prompt: str = Form(
-        "different person, identity drift, cropped, frame, border, seam, halo, duplicate face, extra head, "
-        "extra limbs, deformed anatomy, blurry, cartoon, text, watermark, logo"
+        "cartoon, cgi, black smudge, muddy texture, cropped, border, seam, halo, duplicate face, extra head, "
+        "extra limbs, deformed anatomy, blurry, text, watermark, logo"
     ),
-    guidance_scale: float = Form(7.0),
-    num_inference_steps: int = Form(30),
+    guidance_scale: float = Form(4.2),
+    num_inference_steps: int = Form(28),
     seed: int = Form(-1),
 ) -> Response:
     """Completa partes cortadas (cabeca/ombros) expandindo a foto original nas bordas indicadas."""
@@ -709,7 +793,7 @@ async def outpaint(
             mask_image=mask.resize(work_size, Image.Resampling.BILINEAR),
             width=work_size[0],
             height=work_size[1],
-            strength=0.99,
+            strength=0.92,
             guidance_scale=guidance_scale,
             num_inference_steps=num_inference_steps,
             generator=generator,
@@ -720,6 +804,8 @@ async def outpaint(
 
     # Mantem os pixels originais intactos; so a area nova (e a emenda) vem da IA.
     generated = generated.resize(canvas.size, Image.Resampling.LANCZOS)
+    generated = _harmonize_generated_luma(canvas, generated, mask)
+    generated = _suppress_dark_artifacts(canvas, generated, mask)
     blend_mask = mask.filter(ImageFilter.GaussianBlur(radius=overlap / 2))
     final = Image.composite(generated, canvas, blend_mask)
 

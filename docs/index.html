@@ -418,7 +418,7 @@
 
     .round-guide-box {
       position: absolute;
-      top: var(--guide-center-y, 50%);
+      top: 50%;
       left: 50%;
       width: min(calc((100% - 12px) * var(--fit-w, 1)), calc((100% - 12px) * var(--fit-h, 1)));
       aspect-ratio: 1;
@@ -431,7 +431,7 @@
 
     .round-guide-circle {
       position: absolute;
-      top: var(--guide-center-y, 50%);
+      top: 50%;
       left: 50%;
       width: min(calc((100% - 12px) * var(--fit-w, 1)), calc((100% - 12px) * var(--fit-h, 1)));
       aspect-ratio: 1;
@@ -1853,7 +1853,6 @@
         const fitHeight = Math.min(1, containerAspect / previewAspect);
         visual.style.setProperty("--fit-w", String(fitWidth));
         visual.style.setProperty("--fit-h", String(fitHeight));
-        visual.style.setProperty("--guide-center-y", "46%");
 
         const roundGuideBox = document.createElement("div");
         roundGuideBox.className = "round-guide-box";
@@ -1871,6 +1870,7 @@
         if (isWorking) statusBadge.classList.add("working");
         statusBadge.textContent = readyToDownload ? "✓" : "";
         statusBadge.title = readyToDownload ? "Pronta para baixar" : statusLabel(item.status);
+        statusBadge.style.display = readyToDownload ? "grid" : "none";
         visual.appendChild(statusBadge);
 
         const meta = document.createElement("div");
