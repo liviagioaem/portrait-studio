@@ -1092,10 +1092,34 @@
       img.detectedFaceCount = faces.length;
       if (faces.length !== 1) throw new Error(faces.length ? "Foto de grupo não suportada. Use uma foto individual." : "Rosto não detectado. Marque os olhos manualmente.");
       const landmarks = faces[0];
-      const points = [[33, 133], [362, 263]].map(([first, second]) => ({
+      const eyeCenter = (indices) => {
+        let sumX = 0;
+        let sumY = 0;
+        let count = 0;
+        for (const idx of indices) {
+          const point = landmarks[idx];
+          if (!point) continue;
+          sumX += point.x;
+          sumY += point.y;
+          count++;
+        }
+        if (!count) return null;
+        return {
+          x: (sumX / count) * img.naturalWidth,
+          y: (sumY / count) * img.naturalHeight
+        };
+      };
+
+      // Media de varios pontos do contorno ocular evita inclinacao excessiva por um unico landmark ruidoso.
+      const leftEye = eyeCenter([33, 133, 159, 145, 160, 144, 158, 153]);
+      const rightEye = eyeCenter([362, 263, 386, 374, 385, 380, 387, 373]);
+      const fallback = [[33, 133], [362, 263]].map(([first, second]) => ({
         x: (landmarks[first].x + landmarks[second].x) * img.naturalWidth / 2,
         y: (landmarks[first].y + landmarks[second].y) * img.naturalHeight / 2
-      })).sort((left, right) => left.x - right.x);
+      }));
+
+      const points = [(leftEye || fallback[0]), (rightEye || fallback[1])]
+        .sort((left, right) => left.x - right.x);
       if (points.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < 0 || point.y < 0 || point.x > img.naturalWidth || point.y > img.naturalHeight)) {
         throw new Error("Olhos fora da imagem. Revise manualmente.");
       }
