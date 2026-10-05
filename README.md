@@ -113,6 +113,12 @@ Regra da mascara:
 - branco (255) = area a reconstruir
 - preto (0) = area preservada
 
+Refinamentos do endpoint `/inpaint`:
+
+- `preserve_unmasked=true` (padrao): preserva pixels fora da mascara sem alteracao.
+- `mask_blur=2.0` (padrao): suaviza borda da mascara antes da inferencia.
+- `blend_feather=1.25` (padrao): suaviza a costura no compositing final.
+
 Exemplo minimo (JavaScript):
 
 ```javascript
@@ -131,6 +137,9 @@ async function inpaintWithMask(imageFile, maskFile) {
   form.append("strength", "0.75");
   form.append("guidance_scale", "7.5");
   form.append("num_inference_steps", "30");
+  form.append("preserve_unmasked", "true");
+  form.append("mask_blur", "2.0");
+  form.append("blend_feather", "1.25");
 
   const res = await fetch("http://localhost:8000/inpaint", {
     method: "POST",

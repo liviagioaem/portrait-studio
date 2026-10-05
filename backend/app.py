@@ -259,6 +259,32 @@ def _tune_inpaint_params(strength: float, guidance_scale: float, num_inference_s
     return strength, guidance_scale, num_inference_steps
 
 
+def _prepare_inpaint_mask(mask_image: Image.Image, target_size: tuple[int, int], blur_radius: float) -> Image.Image:
+    mask = mask_image.convert("L")
+    if mask.size != target_size:
+        mask = mask.resize(target_size, Image.Resampling.BILINEAR)
+
+    threshold = int(os.getenv("INPAINT_MASK_THRESHOLD", "16"))
+    mask = mask.point(lambda value: 255 if value >= threshold else 0)
+
+    if blur_radius > 0:
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
+    return mask
+
+
+def _composite_inpaint_result(
+    original_rgb: Image.Image,
+    generated_rgb: Image.Image,
+    mask_image: Image.Image,
+    blend_feather: float,
+) -> Image.Image:
+    blend_mask = mask_image
+    if blend_feather > 0:
+        blend_mask = blend_mask.filter(ImageFilter.GaussianBlur(radius=blend_feather))
+    return Image.composite(generated_rgb.convert("RGB"), original_rgb.convert("RGB"), blend_mask)
+
+
 def _warmup_models_background() -> None:
     # Em hospedagens com limite de boot (ex.: Render free/starter),
     # aquecer modelo no startup pode causar 502 intermitente.
@@ -381,12 +407,21 @@ async def inpaint(
     guidance_scale: float = Form(4.0),
     num_inference_steps: int = Form(10),
     seed: int = Form(-1),
+    preserve_unmasked: bool = Form(True),
+    mask_blur: float = Form(2.0),
+    blend_feather: float = Form(1.25),
 ) -> Response:
     if strength < 0.05 or strength > 1.0:
         raise HTTPException(status_code=400, detail="strength deve estar entre 0.05 e 1.0.")
 
     if num_inference_steps < 1 or num_inference_steps > 100:
         raise HTTPException(status_code=400, detail="num_inference_steps deve estar entre 1 e 100.")
+
+    if mask_blur < 0 or mask_blur > 24:
+        raise HTTPException(status_code=400, detail="mask_blur deve estar entre 0 e 24.")
+
+    if blend_feather < 0 or blend_feather > 24:
+        raise HTTPException(status_code=400, detail="blend_feather deve estar entre 0 e 24.")
 
     source = _load_image_from_upload(image, mode="RGB", label="image")
     mask_image = _load_image_from_upload(mask, mode="L", label="mask")
@@ -395,8 +430,12 @@ async def inpaint(
         strength, guidance_scale, num_inference_steps
     )
 
-    if source.size != mask_image.size:
-        mask_image = mask_image.resize(source.size)
+    mask_image = _prepare_inpaint_mask(mask_image, source.size, blur_radius=mask_blur)
+
+    if mask_image.getbbox() is None:
+        out_passthrough = io.BytesIO()
+        source.save(out_passthrough, format="PNG")
+        return Response(content=out_passthrough.getvalue(), media_type="image/png")
 
     default_resolution = "256" if _is_cpu_mode() else "512"
     inpaint_resolution = int(os.getenv("INPAINT_RESOLUTION", default_resolution))
@@ -426,7 +465,12 @@ async def inpaint(
             num_inference_steps=num_inference_steps,
             generator=generator,
         )
-        output = result.images[0].resize(source.size, Image.Resampling.LANCZOS)
+        generated = result.images[0].resize(source.size, Image.Resampling.LANCZOS)
+        output = (
+            _composite_inpaint_result(source, generated, mask_image, blend_feather)
+            if preserve_unmasked
+            else generated
+        )
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=f"Erro de inferencia no inpainting: {exc}") from exc
 
