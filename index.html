@@ -972,13 +972,11 @@
     const MODEL_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/";
     const OUTPAINT_ENABLED = true;
     const OUTPAINT_MAX_PAD_RATIO = 0.6;
-    const OUTPAINT_RETRY_COOLDOWN_MS = 15000;
     const API_BASE = String(localStorage.getItem("portrait_api_base") || window.PORTRAIT_API_BASE || "").trim().replace(/\/$/, "");
     const OUTPAINT_API = API_BASE ? `${API_BASE}/outpaint` : "";
     let segmenterPromise;
     let faceDetectorPromise;
     let modelFailure = null;
-    let outpaintRetryAfter = 0;
 
     function releaseItem(item) {
       URL.revokeObjectURL(item.thumbURL);
@@ -1476,8 +1474,12 @@
 
     // Completa cabeça/ombros cortados com IA (Hugging Face) expandindo a foto original.
     async function maybeOutpaintSource(img, foreground, eyeL, eyeR, settings) {
-      if (!OUTPAINT_ENABLED || !OUTPAINT_API) return null;
-      if (outpaintRetryAfter && Date.now() < outpaintRetryAfter) return null;
+      if (!OUTPAINT_ENABLED) {
+        return { expanded: null, note: "Outpaint desativado." };
+      }
+      if (!OUTPAINT_API) {
+        return { expanded: null, note: "API de IA não configurada para outpaint." };
+      }
       const touches = edgeContact(foreground);
       const needed = requiredSourcePadding(img, eyeL, eyeR, settings);
       const maxPad = Math.round(Math.max(img.naturalWidth, img.naturalHeight) * OUTPAINT_MAX_PAD_RATIO);
@@ -1485,7 +1487,9 @@
       for (const side of ["top", "left", "right", "bottom"]) {
         pads[side] = touches[side] && needed[side] > 1 ? Math.min(maxPad, Math.ceil(needed[side] * 1.15 + 16)) : 0;
       }
-      if (!Object.values(pads).some(Boolean)) return null;
+      if (!Object.values(pads).some(Boolean)) {
+        return { expanded: null, note: "Outpaint não necessário nesta foto." };
+      }
 
       const source = document.createElement("canvas");
       source.width = img.naturalWidth;
@@ -1504,22 +1508,21 @@
       try {
         response = await fetch(OUTPAINT_API, { method: "POST", body: form });
       } catch {
-        outpaintRetryAfter = Date.now() + OUTPAINT_RETRY_COOLDOWN_MS;
-        els.notice.textContent = `API de IA indisponível em ${API_BASE}. Nova tentativa automática em alguns segundos.`;
-        return null;
+        const note = `Outpaint indisponível para esta foto (falha de rede/API em ${API_BASE}).`;
+        els.notice.textContent = note;
+        return { expanded: null, note };
       }
-      outpaintRetryAfter = 0;
       if (!response.ok) {
         const detail = await response.text().catch(() => "");
-        const temporaryError = response.status >= 500 || response.status === 429;
-        if (temporaryError) {
-          outpaintRetryAfter = Date.now() + OUTPAINT_RETRY_COOLDOWN_MS;
-        }
-        els.notice.textContent = `IA não conseguiu completar esta foto (HTTP ${response.status}). ${detail}`.trim();
-        return null;
+        const note = `Outpaint falhou nesta foto (HTTP ${response.status}). ${detail}`.trim();
+        els.notice.textContent = note;
+        return { expanded: null, note };
       }
       const expanded = await blobToImage(await response.blob());
-      return { ...expanded, offsetX: pads.left, offsetY: pads.top };
+      return {
+        expanded: { ...expanded, offsetX: pads.left, offsetY: pads.top },
+        note: "Outpaint aplicado para completar bordas cortadas."
+      };
     }
 
     function sanitizeName(name) {
@@ -1708,6 +1711,12 @@
           error.className = "tiny";
           error.textContent = item.error;
           meta.appendChild(error);
+        }
+        if (item.warning) {
+          const warning = document.createElement("div");
+          warning.className = "tiny";
+          warning.textContent = item.warning;
+          meta.appendChild(warning);
         }
 
 
@@ -1947,12 +1956,15 @@
       let renderEyeL = eyeL;
       let renderEyeR = eyeR;
       let expanded = null;
+      let outpaintNote = "";
       const outputs = [];
       let warning;
       try {
         if (!previewOnly) {
-          expanded = await maybeOutpaintSource(item.img, foreground, eyeL, eyeR,
+          const outpaintResult = await maybeOutpaintSource(item.img, foreground, eyeL, eyeR,
             fitHeadSafety(foreground, eyeL, eyeR, settings));
+          outpaintNote = outpaintResult?.note || "";
+          expanded = outpaintResult?.expanded || null;
           if (expanded) {
             foreground.width = foreground.height = 1;
             els.hint.textContent = "Removendo fundo da foto completada...";
@@ -1974,7 +1986,7 @@
         if (expanded) URL.revokeObjectURL(expanded.url);
       }
       if (previewOnly) return outputs;
-      item.warning = warning;
+      item.warning = [warning, outpaintNote].filter(Boolean).join(" ");
       if (settings.fitCompromised && settings.bodyAnchored) {
         item.warning = [item.warning, "Enquadramento estilo retrato profissional: cabeça preservada e base aproximada pelos ombros."].filter(Boolean).join(" ");
       }
