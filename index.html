@@ -378,6 +378,24 @@
       background: #f2fcf6;
     }
 
+    .status-badge.pending {
+      color: #6f7f9c;
+      border-color: #d2d9e8;
+      background: #fff;
+    }
+
+    .status-badge.working {
+      color: #2d5fb8;
+      border-color: #c8dafd;
+      background: #eef4ff;
+    }
+
+    .status-badge.error {
+      color: #b42318;
+      border-color: #f0c7c4;
+      background: #fff6f5;
+    }
+
     .meta {
       display: grid;
       gap: 10px;
@@ -1657,8 +1675,14 @@
         visual.appendChild(roundGuideCircle);
 
         const statusBadge = document.createElement("div");
-        statusBadge.className = "status-badge";
-        statusBadge.textContent = "✓";
+        statusBadge.className = `status-badge ${item.status || "pending"}`;
+        statusBadge.textContent = item.status === "done"
+          ? "✓"
+          : item.status === "working"
+            ? "…"
+            : item.status === "error"
+              ? "!"
+              : "○";
         statusBadge.title = statusLabel(item.status);
         visual.appendChild(statusBadge);
 
@@ -1711,12 +1735,6 @@
           error.className = "tiny";
           error.textContent = item.error;
           meta.appendChild(error);
-        }
-        if (item.warning) {
-          const warning = document.createElement("div");
-          warning.className = "tiny";
-          warning.textContent = item.warning;
-          meta.appendChild(warning);
         }
 
 
@@ -1956,14 +1974,11 @@
       let renderEyeL = eyeL;
       let renderEyeR = eyeR;
       let expanded = null;
-      let outpaintNote = "";
       const outputs = [];
-      let warning;
       try {
         if (!previewOnly) {
           const outpaintResult = await maybeOutpaintSource(item.img, foreground, eyeL, eyeR,
             fitHeadSafety(foreground, eyeL, eyeR, settings));
-          outpaintNote = outpaintResult?.note || "";
           expanded = outpaintResult?.expanded || null;
           if (expanded) {
             foreground.width = foreground.height = 1;
@@ -1976,7 +1991,6 @@
         enhancePortraitCanvas(foreground);
         cleanFringe(foreground);
         settings = fitHeadSafety(foreground, renderEyeL, renderEyeR, settings);
-        warning = framingWarning(foreground, renderEyeL, renderEyeR, settings);
         for (const shape of ["quadrada", "redonda"]) {
           const blob = await renderPortraitBlob(foreground, renderEyeL, renderEyeR, { ...settings, shape });
           outputs.push({ shape, blob });
@@ -1986,10 +2000,7 @@
         if (expanded) URL.revokeObjectURL(expanded.url);
       }
       if (previewOnly) return outputs;
-      item.warning = [warning, outpaintNote].filter(Boolean).join(" ");
-      if (settings.fitCompromised && settings.bodyAnchored) {
-        item.warning = [item.warning, "Enquadramento estilo retrato profissional: cabeça preservada e base aproximada pelos ombros."].filter(Boolean).join(" ");
-      }
+      item.warning = "";
       item.review = "pending";
       for (const output of outputs) output.url = URL.createObjectURL(output.blob);
       for (const output of item.outputs || []) URL.revokeObjectURL(output.url);
