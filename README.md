@@ -50,7 +50,8 @@ Copie `backend/.env.example` para `.env` e ajuste se necessario.
 - `HF_TOKEN`: token do Hugging Face (somente se o modelo exigir)
 - `IMG2IMG_MODEL_ID`: por padrao `runwayml/stable-diffusion-v1-5` (gratuito/open-source)
 - `IMG2IMG_RESOLUTION`: recomendado `768` (CPU mais rapido com `512`)
-- `INPAINT_MODEL_ID`: por padrao `runwayml/stable-diffusion-inpainting`
+- `INPAINT_MODEL_ID`: recomendado `black-forest-labs/FLUX.1-Fill-dev` (melhor qualidade de reconstrucao)
+- fallback se faltar VRAM/custo: `diffusers/stable-diffusion-xl-1.0-inpainting-0.1` ou `runwayml/stable-diffusion-inpainting`
 - `INPAINT_RESOLUTION`: recomendado `512` para comecar
 - `LOW_VRAM`: `1` para descarregar partes do modelo na CPU (mais lento, usa menos VRAM)
 - `DEVICE`: `cuda` (recomendado) ou `cpu` (muito lento)
@@ -204,7 +205,7 @@ Use estes valores iniciais:
 - `DEVICE=cpu` (primeiro deploy para validar; depois troque para `cuda` se plano suportar GPU)
 - `IMG2IMG_MODEL_ID=runwayml/stable-diffusion-v1-5`
 - `IMG2IMG_RESOLUTION=512` (CPU mais estavel)
-- `INPAINT_MODEL_ID=runwayml/stable-diffusion-inpainting`
+- `INPAINT_MODEL_ID=black-forest-labs/FLUX.1-Fill-dev`
 - `INPAINT_RESOLUTION=512`
 - `LOW_VRAM=1`
 - `HF_HOME=/opt/render/project/.cache/huggingface`
