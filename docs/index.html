@@ -487,24 +487,6 @@
       background: #f2fcf6;
     }
 
-    .status-badge.pending {
-      color: #6f7f9c;
-      border-color: #d2d9e8;
-      background: #fff;
-    }
-
-    .status-badge.working {
-      color: #2d5fb8;
-      border-color: #c8dafd;
-      background: #eef4ff;
-    }
-
-    .status-badge.error {
-      color: #b42318;
-      border-color: #f0c7c4;
-      background: #fff6f5;
-    }
-
     .meta {
       display: grid;
       gap: 10px;
@@ -1076,7 +1058,6 @@
     </div>
   </section>
 
-  <script src="./config.js"></script>
   <script>
     const state = {
       items: [],
@@ -1192,10 +1173,6 @@
     const STANDARD_FRAMING = { eyeRatio: 0.205, bodyPercentile: 0.94 };
     const PIXELS_PER_METER = Math.round(OUTPUT_SIZE * 1000 / OUTPUT_MM);
     const MODEL_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/";
-    const OUTPAINT_ENABLED = true;
-    const OUTPAINT_MAX_PAD_RATIO = 0.6;
-    const API_BASE = String(localStorage.getItem("portrait_api_base") || window.PORTRAIT_API_BASE || "").trim().replace(/\/$/, "");
-    const OUTPAINT_API = API_BASE ? `${API_BASE}/outpaint` : "";
     let segmenterPromise;
     let faceDetectorPromise;
     let modelFailure = null;
@@ -1344,8 +1321,7 @@
       const points = [[33, 133], [362, 263]].map(([first, second]) => ({
         x: (landmarks[first].x + landmarks[second].x) * img.naturalWidth / 2,
         y: (landmarks[first].y + landmarks[second].y) * img.naturalHeight / 2
-      }))
-        .sort((left, right) => left.x - right.x);
+      })).sort((left, right) => left.x - right.x);
       if (points.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < 0 || point.y < 0 || point.x > img.naturalWidth || point.y > img.naturalHeight)) {
         throw new Error("Olhos fora da imagem. Revise manualmente.");
       }
@@ -1754,121 +1730,6 @@
       return new Blob(parts, { type: "image/png" });
     }
 
-    // Lados da foto original em que a pessoa encosta na borda (cabeça/ombro cortado).
-    function edgeContact(foreground) {
-      const { width, height } = foreground;
-      const data = foreground.getContext("2d", { willReadFrequently: true })
-        .getImageData(0, 0, width, height).data;
-      const solid = (x, y) => data[(y * width + x) * 4 + 3] >= 128 ? 1 : 0;
-      let top = 0, bottom = 0, left = 0, right = 0;
-      for (let x = 0; x < width; x++) {
-        top += solid(x, 0);
-        bottom += solid(x, height - 1);
-      }
-      for (let y = 0; y < height; y++) {
-        left += solid(0, y);
-        right += solid(width - 1, y);
-      }
-      // Thresholds mais suaves reduzem falsos negativos quando há recorte leve.
-      const minRow = Math.max(3, width * 0.02);
-      const minColumn = Math.max(3, height * 0.02);
-      return { top: top >= minRow, bottom: bottom >= minRow, left: left >= minColumn, right: right >= minColumn };
-    }
-
-    // Quanto a área exportada ultrapassa a foto original em cada lado (inverso do transform de renderPortraitBlob).
-    function requiredSourcePadding(img, eyeL, eyeR, settings) {
-      const sourceDist = Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y) || 1;
-      const scale = settings.targetEyeDistance / sourceDist;
-      const inverseRotation = Math.atan2(eyeR.y - eyeL.y, eyeR.x - eyeL.x);
-      const cosine = Math.cos(inverseRotation);
-      const sine = Math.sin(inverseRotation);
-      const targetL = { x: (settings.outW - settings.targetEyeDistance) / 2, y: settings.outH * settings.eyeLineRatio };
-      const maxShift = settings.circleRadius * 0.22;
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (const [x, y] of [[0, -maxShift], [settings.outW, -maxShift], [0, settings.outH], [settings.outW, settings.outH]]) {
-        const dx = (x - targetL.x) / scale;
-        const dy = (y - targetL.y) / scale;
-        const sourceX = eyeL.x + dx * cosine - dy * sine;
-        const sourceY = eyeL.y + dx * sine + dy * cosine;
-        minX = Math.min(minX, sourceX);
-        minY = Math.min(minY, sourceY);
-        maxX = Math.max(maxX, sourceX);
-        maxY = Math.max(maxY, sourceY);
-      }
-      return {
-        top: Math.max(0, -minY),
-        left: Math.max(0, -minX),
-        right: Math.max(0, maxX - img.naturalWidth),
-        bottom: Math.max(0, maxY - img.naturalHeight)
-      };
-    }
-
-    async function blobToImage(blob) {
-      const url = URL.createObjectURL(blob);
-      const image = new Image();
-      image.src = url;
-      try {
-        await image.decode();
-        return { img: image, url };
-      } catch (error) {
-        URL.revokeObjectURL(url);
-        throw error;
-      }
-    }
-
-    // Completa cabeça/ombros cortados com IA (Hugging Face) expandindo a foto original.
-    async function maybeOutpaintSource(img, foreground, eyeL, eyeR, settings) {
-      if (!OUTPAINT_ENABLED) {
-        return { expanded: null, note: "Outpaint desativado." };
-      }
-      if (!OUTPAINT_API) {
-        return { expanded: null, note: "API de IA não configurada para outpaint." };
-      }
-      const touches = edgeContact(foreground);
-      const needed = requiredSourcePadding(img, eyeL, eyeR, settings);
-      const maxPad = Math.round(Math.max(img.naturalWidth, img.naturalHeight) * OUTPAINT_MAX_PAD_RATIO);
-      const pads = {};
-      for (const side of ["top", "left", "right", "bottom"]) {
-        pads[side] = touches[side] && needed[side] > 1 ? Math.min(maxPad, Math.ceil(needed[side] * 1.15 + 16)) : 0;
-      }
-      if (!Object.values(pads).some(Boolean)) {
-        return { expanded: null, note: "Outpaint não necessário nesta foto." };
-      }
-
-      const source = document.createElement("canvas");
-      source.width = img.naturalWidth;
-      source.height = img.naturalHeight;
-      source.getContext("2d").drawImage(img, 0, 0);
-      const sourceBlob = await new Promise((resolve, reject) => source.toBlob(
-        (result) => result ? resolve(result) : reject(new Error("Falha ao preparar imagem.")), "image/jpeg", 0.95));
-      source.width = source.height = 1;
-
-      const form = new FormData();
-      form.append("file", sourceBlob, "source.jpg");
-      for (const [side, value] of Object.entries(pads)) form.append(`pad_${side}`, String(value));
-
-      els.hint.textContent = "Completando cabeça/ombros cortados com IA...";
-      let response;
-      try {
-        response = await fetch(OUTPAINT_API, { method: "POST", body: form });
-      } catch {
-        const note = `Outpaint indisponível para esta foto (falha de rede/API em ${API_BASE}).`;
-        els.notice.textContent = note;
-        return { expanded: null, note };
-      }
-      if (!response.ok) {
-        const detail = await response.text().catch(() => "");
-        const note = `Outpaint falhou nesta foto (HTTP ${response.status}). ${detail}`.trim();
-        els.notice.textContent = note;
-        return { expanded: null, note };
-      }
-      const expanded = await blobToImage(await response.blob());
-      return {
-        expanded: { ...expanded, offsetX: pads.left, offsetY: pads.top },
-        note: "Outpaint aplicado para completar bordas cortadas."
-      };
-    }
-
     function sanitizeName(name) {
       const base = name.replace(/\.[^.]+$/, "");
       return base.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") || "portrait";
@@ -2004,8 +1865,12 @@
 
         const statusBadge = document.createElement("div");
         statusBadge.className = "status-badge";
-        statusBadge.textContent = "✓";
-        statusBadge.title = statusLabel(item.status);
+        const readyToDownload = isReadyToDownload(item);
+        const isWorking = item.status === "working";
+        statusBadge.classList.add(readyToDownload ? "done" : "pending");
+        if (isWorking) statusBadge.classList.add("working");
+        statusBadge.textContent = readyToDownload ? "✓" : "";
+        statusBadge.title = readyToDownload ? "Pronta para baixar" : statusLabel(item.status);
         visual.appendChild(statusBadge);
 
         const meta = document.createElement("div");
@@ -2311,37 +2176,26 @@
       if (Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y) < 5) throw new Error("Marque dois olhos distintos.");
       let settings = getSettings();
       els.hint.textContent = "Removendo fundo... O primeiro carregamento pode demorar.";
-      let foreground = await removeBackground(item.img);
-      let renderEyeL = eyeL;
-      let renderEyeR = eyeR;
-      let expanded = null;
+      const foreground = await removeBackground(item.img);
+      enhancePortraitCanvas(foreground);
+      cleanFringe(foreground);
       const outputs = [];
+      let warning;
       try {
-        if (!previewOnly) {
-          const outpaintResult = await maybeOutpaintSource(item.img, foreground, eyeL, eyeR,
-            fitHeadSafety(foreground, eyeL, eyeR, settings));
-          expanded = outpaintResult?.expanded || null;
-          if (expanded) {
-            foreground.width = foreground.height = 1;
-            els.hint.textContent = "Removendo fundo da foto completada...";
-            foreground = await removeBackground(expanded.img);
-            renderEyeL = { x: eyeL.x + expanded.offsetX, y: eyeL.y + expanded.offsetY };
-            renderEyeR = { x: eyeR.x + expanded.offsetX, y: eyeR.y + expanded.offsetY };
-          }
-        }
-        enhancePortraitCanvas(foreground);
-        cleanFringe(foreground);
-        settings = fitHeadSafety(foreground, renderEyeL, renderEyeR, settings);
+        settings = fitHeadSafety(foreground, eyeL, eyeR, settings);
+        warning = framingWarning(foreground, eyeL, eyeR, settings);
         for (const shape of ["quadrada", "redonda"]) {
-          const blob = await renderPortraitBlob(foreground, renderEyeL, renderEyeR, { ...settings, shape });
+          const blob = await renderPortraitBlob(foreground, eyeL, eyeR, { ...settings, shape });
           outputs.push({ shape, blob });
         }
       } finally {
         foreground.width = foreground.height = 1;
-        if (expanded) URL.revokeObjectURL(expanded.url);
       }
       if (previewOnly) return outputs;
-      item.warning = "";
+      item.warning = warning;
+      if (settings.fitCompromised && settings.bodyAnchored) {
+        item.warning = [item.warning, "Enquadramento estilo retrato profissional: cabeça preservada e base aproximada pelos ombros."].filter(Boolean).join(" ");
+      }
       item.review = "pending";
       for (const output of outputs) output.url = URL.createObjectURL(output.blob);
       for (const output of item.outputs || []) URL.revokeObjectURL(output.url);
