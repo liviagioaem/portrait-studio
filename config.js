@@ -2,7 +2,7 @@
 // 1) localStorage.portrait_api_base
 // 2) window.PORTRAIT_API_BASE (se ja definido antes deste script)
 // 3) localhost -> http://localhost:8000
-// 4) producao -> mesmo host em /api (via proxy/rewrite)
+// 4) producao -> URL publica da API no Render
 (function resolvePortraitApiBase() {
   const fromStorage = localStorage.getItem("portrait_api_base");
   if (fromStorage && fromStorage.trim()) {
@@ -22,5 +22,5 @@
 
   window.PORTRAIT_API_BASE = isLocal
     ? "http://localhost:8000"
-    : `${window.location.origin}/api`;
+    : "https://portrait-studio.onrender.com";
 })();
