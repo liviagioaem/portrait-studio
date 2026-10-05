@@ -116,8 +116,9 @@ Regra da mascara:
 Refinamentos do endpoint `/inpaint`:
 
 - `preserve_unmasked=true` (padrao): preserva pixels fora da mascara sem alteracao.
-- `mask_blur=2.0` (padrao): suaviza borda da mascara antes da inferencia.
-- `blend_feather=1.25` (padrao): suaviza a costura no compositing final.
+- `mask_blur=2.4` (padrao): suaviza borda da mascara antes da inferencia.
+- `blend_feather=2.0` (padrao): suaviza a costura no compositing final.
+- `realistic_mode=true` (padrao): autoajusta `strength`, `guidance` e `steps` pelo tamanho da area mascarada para resultado mais natural.
 
 Exemplo minimo (JavaScript):
 
@@ -134,12 +135,13 @@ async function inpaintWithMask(imageFile, maskFile) {
     "negative_prompt",
     "artifacts, blur, deformed eyes, extra mouth, text, watermark",
   );
-  form.append("strength", "0.75");
-  form.append("guidance_scale", "7.5");
-  form.append("num_inference_steps", "30");
+  form.append("strength", "0.52");
+  form.append("guidance_scale", "3.2");
+  form.append("num_inference_steps", "18");
   form.append("preserve_unmasked", "true");
-  form.append("mask_blur", "2.0");
-  form.append("blend_feather", "1.25");
+  form.append("mask_blur", "2.4");
+  form.append("blend_feather", "2.0");
+  form.append("realistic_mode", "true");
 
   const res = await fetch("http://localhost:8000/inpaint", {
     method: "POST",

@@ -265,12 +265,52 @@ def _prepare_inpaint_mask(mask_image: Image.Image, target_size: tuple[int, int],
         mask = mask.resize(target_size, Image.Resampling.BILINEAR)
 
     threshold = int(os.getenv("INPAINT_MASK_THRESHOLD", "16"))
-    mask = mask.point(lambda value: 255 if value >= threshold else 0)
+    # Mantem gradiente de opacidade da mascara para transicao mais natural.
+    mask = mask.point(lambda value: 0 if value < threshold else value)
 
     if blur_radius > 0:
         mask = mask.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
     return mask
+
+
+def _mask_coverage(mask_image: Image.Image) -> float:
+    values = np.asarray(mask_image, dtype=np.uint8)
+    if values.size == 0:
+        return 0.0
+    # Cobertura ponderada (0..1) considerando mascaras suaves.
+    return float(values.mean() / 255.0)
+
+
+def _refine_inpaint_for_realism(
+    strength: float,
+    guidance_scale: float,
+    num_inference_steps: int,
+    mask_coverage: float,
+    mask_blur: float,
+    blend_feather: float,
+) -> tuple[float, float, int, float, float]:
+    # Autoajuste para reduzir "look artificial" sem perder capacidade de reparo.
+    if mask_coverage <= 0.08:
+        strength = min(max(strength, 0.35), 0.52)
+        guidance_scale = min(max(guidance_scale, 2.8), 4.2)
+        num_inference_steps = min(max(num_inference_steps, 14), 24)
+        mask_blur = max(mask_blur, 2.0)
+        blend_feather = max(blend_feather, 1.8)
+    elif mask_coverage <= 0.20:
+        strength = min(max(strength, 0.45), 0.65)
+        guidance_scale = min(max(guidance_scale, 2.6), 4.4)
+        num_inference_steps = min(max(num_inference_steps, 16), 30)
+        mask_blur = max(mask_blur, 2.2)
+        blend_feather = max(blend_feather, 2.0)
+    else:
+        strength = min(max(strength, 0.52), 0.78)
+        guidance_scale = min(max(guidance_scale, 2.2), 4.0)
+        num_inference_steps = min(max(num_inference_steps, 18), 34)
+        mask_blur = max(mask_blur, 2.6)
+        blend_feather = max(blend_feather, 2.4)
+
+    return strength, guidance_scale, num_inference_steps, mask_blur, blend_feather
 
 
 def _composite_inpaint_result(
@@ -419,13 +459,14 @@ async def inpaint(
         "deformed face, asymmetrical eyes, extra eyes, extra mouth, extra limbs, seam, halo, blur, "
         "text, watermark, logo"
     ),
-    strength: float = Form(0.6),
-    guidance_scale: float = Form(4.0),
-    num_inference_steps: int = Form(10),
+    strength: float = Form(0.52),
+    guidance_scale: float = Form(3.2),
+    num_inference_steps: int = Form(18),
     seed: int = Form(-1),
     preserve_unmasked: bool = Form(True),
-    mask_blur: float = Form(2.0),
-    blend_feather: float = Form(1.25),
+    mask_blur: float = Form(2.4),
+    blend_feather: float = Form(2.0),
+    realistic_mode: bool = Form(True),
 ) -> Response:
     if strength < 0.05 or strength > 1.0:
         raise HTTPException(status_code=400, detail="strength deve estar entre 0.05 e 1.0.")
@@ -442,16 +483,28 @@ async def inpaint(
     source = _load_image_from_upload(image, mode="RGB", label="image")
     mask_image = _load_image_from_upload(mask, mode="L", label="mask")
 
-    strength, guidance_scale, num_inference_steps = _tune_inpaint_params(
-        strength, guidance_scale, num_inference_steps
-    )
-
     mask_image = _prepare_inpaint_mask(mask_image, source.size, blur_radius=mask_blur)
 
     if mask_image.getbbox() is None:
         out_passthrough = io.BytesIO()
         source.save(out_passthrough, format="PNG")
         return Response(content=out_passthrough.getvalue(), media_type="image/png")
+
+    if realistic_mode:
+        coverage = _mask_coverage(mask_image)
+        strength, guidance_scale, num_inference_steps, mask_blur, blend_feather = _refine_inpaint_for_realism(
+            strength,
+            guidance_scale,
+            num_inference_steps,
+            coverage,
+            mask_blur,
+            blend_feather,
+        )
+        mask_image = _prepare_inpaint_mask(mask_image, source.size, blur_radius=mask_blur)
+
+    strength, guidance_scale, num_inference_steps = _tune_inpaint_params(
+        strength, guidance_scale, num_inference_steps
+    )
 
     default_resolution = "256" if _is_cpu_mode() else "512"
     inpaint_resolution = int(os.getenv("INPAINT_RESOLUTION", default_resolution))
